@@ -356,6 +356,7 @@ flowchart LR
     subgraph Vestibulo["Vestíbulo (local)"]
         F5V[Fuente 5V] --> NodeMCU
         F12V[Fuente 12V] --> Rele[Relé NC]
+        G5 -- control --> Rele
         Rele --> P4
     end
 
