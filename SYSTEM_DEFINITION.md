@@ -8,69 +8,35 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 
 ## Distribución Física
 
-```
-  ┌─────────────────────────────────────────────────────────────────────┐
-  │                           SALÓN                                     │
-  │  ┌──────────────────────────────────────────────────────────────┐  │
-  │  │  Panel de control                                            │  │
-  │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐                  │  │
-  │  │  │ Pulsador │  │ LED      │  │ Buzzer   │  ← abre + oye    │  │
-  │  │  │ Interno  │  │ Estado   │  │ Musical  │     timbre       │  │
-  │  │  └──────────┘  └──────────┘  └──────────┘                  │  │
-  │  └──────────────────────────────────────────────────────────────┘  │
-  └──────────────────────────┬──────────────────────────────────────────┘
-                             │
-  ┌──────────────────────────┴──────────────────────────────────────────┐
-  │                         VESTÍBULO                                   │
-  │  ┌──────────┐  ┌──────────────────────────────────────────────┐  │
-  │  │ Módulo   │  │  Panel de control (réplica)                  │  │
-  │  │ MCU      │  │  ┌──────────┐  ┌──────────┐  ┌────────┐     │  │
-  │  │ ┌──────┐ │  │  │ Pulsador │  │ LED      │  │ Buzzer │     │  │
-  │  │ │NodeMCU│ │  │  │ Interno  │  │ Estado   │  │ Musical│     │  │
-  │  │ │Fuente │ │  │  └──────────┘  └──────────┘  └────────┘     │  │
-  │  │ │ 5V    │ │  └──────────────────────────────────────────────┘  │
-  │  │ │Fuente │ │                                                    │
-  │  │ │ 12V   │ │                                                    │
-  │  │ │Relé   │ │                                                    │
-  │  │ └──────┘ │                                                    │
-  │  └──────────┘                                                    │
-  └──────────────────────────┬──────────────────────────────────────────┘
-                             │
-  ┌──────────────────────────┴──────────────────────────────────────────┐
-  │                           PATIO                                     │
-  │  ┌──────────────────────────────────────────────────────────────┐  │
-  │  │  Panel de timbre                                             │  │
-  │  │  ┌──────────────┐  ┌──────────┐  ┌──────────┐              │  │
-  │  │  │   Pulsador   │  │ LED      │  │ Buzzer   │  ← solicita  │  │
-  │  │  │   Externo    │  │ Estado   │  │ Musical  │     entrada  │  │
-  │  │  └──────────────┘  └──────────┘  └──────────┘              │  │
-  │  └──────────────────────────────────────────────────────────────┘  │
-  │  ┌──────────────────────────────────────────────────────────────┐  │
-  │  │  Pedal de apertura de emergencia                            │  │
-  │  │  ┌──────────────────────────────┐                            │  │
-  │  │  │ NC en serie con alimentación │  ← corte físico únicamente │  │
-  │  │  │ cerradura (sin señal a MCU)  │     (no va al NodeMCU)     │  │
-  │  │  └──────────────────────────────┘                            │  │
-  │  └──────────────────────────────────────────────────────────────┘  │
-  │  ┌──────────────────────────────────────────────────────────────┐  │
-  │  │  Cerradura Magnética + Final de Carrera                     │  │
-  │  │  ┌──────────────────────┐                                    │  │
-  │  │  │ Cerradura (12V)     │  ← alimentación vía relé NC        │  │
-  │  │  │ Final carrera (NA)  │  ← GPIO13                          │  │
-  │  │  └──────────────────────┘                                    │  │
-  │  └──────────────────────────────────────────────────────────────┘  │
-  └──────────────────────────┬──────────────────────────────────────────┘
-                             │
-  ┌──────────────────────────┴──────────────────────────────────────────┐
-  │                         EXTERIOR                                   │
-  │  ┌──────────────────────────────────────────────────────────────┐  │
-  │  │  Panel de timbre                                             │  │
-  │  │  ┌──────────────┐  ┌──────────┐  ┌──────────┐              │  │
-  │  │  │   Pulsador   │  │ LED      │  │ Buzzer   │  ← solicita  │  │
-  │  │  │   Externo    │  │ Estado   │  │ Musical  │     entrada  │  │
-  │  │  └──────────────┘  └──────────┘  └──────────┘              │  │
-  │  └──────────────────────────────────────────────────────────────┘  │
-  └─────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Salon["SALÓN"]
+        SPanel["Panel de control<br/>─────────<br/>Pulsador Interno<br/>LED Estado 12V<br/>Buzzer Musical"]
+    end
+
+    subgraph Vestibulo["VESTÍBULO"]
+        MCU["Módulo MCU<br/>─────────<br/>NodeMCU ESP8266<br/>Fuente 5V<br/>Fuente 12V<br/>Relé NC"]
+        VPanel["Panel de control (réplica)<br/>─────────<br/>Pulsador Interno<br/>LED Estado 12V<br/>Buzzer Musical"]
+    end
+
+    subgraph Patio["PATIO"]
+        PPanel["Panel de timbre<br/>─────────<br/>Pulsador Externo<br/>LED Estado 3V<br/>Buzzer Musical"]
+        Pedal["Pedal Emergencia<br/>(NC serie con 12V)"]
+        Lock["Cerradura Magnética<br/>+ Final Carrera"]
+    end
+
+    subgraph Exterior["EXTERIOR"]
+        EPanel["Panel de timbre<br/>─────────<br/>Pulsador Externo<br/>LED Estado 3V<br/>Buzzer Musical"]
+    end
+
+    Salon --- UTP["UTP Cat5 (4 pares)"] --- Vestibulo
+    Vestibulo --- Patio
+    Patio --- Exterior
+
+    MCU -.-> VPanel
+    MCU -.-> SPanel
+    MCU -.-> PPanel
+    MCU -.-> EPanel
 ```
 
 ## Cableado (UTP Cat5, 4 pares)
@@ -369,130 +335,124 @@ stateDiagram-v2
 
 ### 11.2 Diagrama general de conexiones (Vestíbulo)
 
-Conexiones del NodeMCU en el módulo central:
+```mermaid
+flowchart LR
+    subgraph NodeMCU
+        G4[GPIO4 - Pulsador int]
+        G16[GPIO16 - Pulsador ext]
+        G12[GPIO12 - PWM LEDs]
+        G14[GPIO14 - Buzzer]
+        G5[GPIO5 - Relé]
+        G13[GPIO13 - FC]
+    end
 
-```
-                         ┌─────────────────────────────┐
-                         │         NodeMCU             │
-                         │  ┌───┐ ┌───┐ ┌───┐ ┌───┐  │
-                         │  │GND│ │3V3│ │D1 │ │D2 │  │
-                         │  └───┘ └───┘ └───┘ └───┘  │
-                         │  ┌───┐ ┌───┐ ┌───┐ ┌───┐  │
-                         │  │D3 │ │D4 │ │D5 │ │D6 │  │
-                         │  └───┘ └───┘ └───┘ └───┘  │
-                         └─────────────────────────────┘
-                              │  │  │  │  │  │
-         ┌────────────────────┘  │  │  │  │  └──────────────┐
-         │                       │  │  │  │                 │
-         ▼                       ▼  ▼  ▼  ▼                 ▼
-      ┌──────┐               ┌─────────────────┐       ┌──────┐
-      │ GND  │               │   UTP 4 pares    │       │  5V  │
-      │ común│               └─────────────────┘       │Fuente│
-      └──────┘                      │                  └──────┘
-                                    │
-         ┌──────────────────────────┼──────────────────┐
-         │                          │                  │
-         ▼                          ▼                  ▼
-      ┌──────┐               ┌─────────────────┐   ┌──────┐
-      │ Patio│               │  Salón / Ext.   │   │Fuente│
-      │      │               │ (paneles remotos)│   │ 12V  │
-      └──────┘               └─────────────────┘   └──────┘
-                                                      │
-                                                      ▼
-                                                ┌──────────┐
-                                                │  Relé NC │──→ Cerradura
-                                                └──────────┘
+    subgraph UTP["UTP Cat5 (4 pares)"]
+        P1["Par 1: BL→GPIO4, NA→+12V"]
+        P2["Par 2: BL/V→GPIO16, V→GPIO13"]
+        P3["Par 3: BL/AZ→GPIO14, AZ→GPIO12"]
+        P4["Par 4: BL/MR→GND, MR→Cerradura"]
+    end
+
+    subgraph Vestibulo["Vestíbulo (local)"]
+        F5V[Fuente 5V] --> NodeMCU
+        F12V[Fuente 12V] --> Rele[Relé NC]
+        Rele --> P4
+    end
+
+    subgraph Paneles["Paneles Remotos"]
+        Salon["Salón<br/>(int + LED 12V + buzzer)"]
+        Patio["Patio<br/>(ext + LED 3V + buzzer + FC + cerradura)"]
+        Ext["Exterior<br/>(ext + LED 3V + buzzer)"]
+    end
+
+    G4 --> P1
+    G16 --> P2
+    G12 --> P3
+    G14 --> P3
+    G13 --> P2
+    P1 --> Salon
+    P2 --> Patio
+    P2 --> Ext
+    P3 --> Salon & Patio & Ext
+    P4 --> Patio
 ```
 
-### 11.3 Circuito LED — Panel Interno (salón / vestíbulo)
+### 11.3 Circuito — Panel Interno (salón / vestíbulo)
 
-```
-        UTP par 3 AZ        UTP par 1 NA     UTP par 4 BL/MR
-        (GPIO12 PWM)            (+12V)            (GND)
-              │                   │                 │
-              ▼                   ▼                 ▼
-          ┌──────┐           ┌──────┐           ┌──────┐
-          │ 1kΩ  │           │ 470Ω │           │      │
-          └──┬───┘           └──┬───┘           │      │
-             │                  │               │      │
-             │  BC337           │               │      │
-             │ ┌─┤ ├────────────┘               │      │
-             │ │ B│                             │      │
-             └─┤   C├──┐                       │      │
-               │   E├──┼───────────────────────┘      │
-               └─────┘  │                              │
-                        │    ┌────┐                     │
-                        └────┤ LED├─────────────────────┘
-                             │ 12V│
-                             └────┘
+```mermaid
+flowchart LR
+    subgraph UTP["UTP"]
+        AZ[Par 3 AZ<br/>GPIO12 PWM]
+        NA[Par 1 NA<br/>+12V]
+        GND[Par 4 BL/MR<br/>GND]
+    end
+
+    subgraph Panel["Panel Interno"]
+        R1[1kΩ] --> B[BC337 Base]
+        AZ --> R1
+        B --> C[BC337 Colector]
+        NA --> R2[470Ω] --> C
+        E[BC337 Emisor] --> GND
+
+        C --> LED12[LED 12V]
+        LED12 --> GND
+    end
 ```
 
 ### 11.4 Circuito — Panel Externo (patio / exterior)
 
-```
-        UTP par 2 BL/V     UTP par 3 AZ     UTP par 3 BL/AZ   UTP par 4 BL/MR
-        (GPIO16 pull-up)    (GPIO12 PWM)      (GPIO14 buzzer)       (GND)
-              │                  │                   │                │
-              ▼                  ▼                   ▼                ▼
-          ┌──────┐          ┌──────┐            ┌──────┐         ┌──────┐
-          │  10k │          │ 150Ω │            │ Buzzer│         │      │
-          └──┬───┘          └──┬───┘            │  Mus. │         │      │
-             │                 │                └──┬───┘         │      │
-             │              ┌──┴──┐                │             │      │
-             │              │ LED │────────────────┼─────────────┘      │
-             │              └─────┘                │                    │
-             │                                     │                    │
-          ┌──┴──┐                                  │                    │
-          │ Puls│                                  │                    │
-          │  Ext│──────────────────────────────────┼────────────────────┘
-          └─────┘                                  │
+```mermaid
+flowchart LR
+    subgraph UTP["UTP"]
+        BLV[Par 2 BL/V<br/>GPIO16]
+        AZ[Par 3 AZ<br/>GPIO12 PWM]
+        BLAZ[Par 3 BL/AZ<br/>GPIO14 Buzzer]
+        GND[Par 4 BL/MR<br/>GND]
+    end
+
+    subgraph Panel["Panel Externo"]
+        BLV --> R10k[10kΩ] --> Vcc[+3.3V<br/>pull-up]
+        BLV --> Puls[Pulsador Ext<br/>NA]
+        Puls --> GND
+
+        AZ --> R150[150Ω] --> LED3[LED 3V]
+        LED3 --> GND
+
+        BLAZ --> Buz[Buzzer Piezo]
+        Buz --> GND
+    end
 ```
 
 ### 11.5 Circuito — Cerradura + Pedal de Emergencia
 
-```
-                             Vestíbulo
-                     ┌──────────────────────┐
-                     │  Fuente 12V           │
-                     │  ┌────────────────┐   │
-                     │  │ +12V         GND│──┼──────────┬─── GND (par 4 BL/MR)
-                     │  └───────┬────────┘   │          │
-                     │          │             │          │
-                     │          ▼             │          │
-                     │  ┌────────────┐        │          │
-                     │  │  Relé NC   │        │          │
-                     │  │ COM────NC──┼────────┼──────────┼──→ UTP par 4 MR
-                     │  └─────┬──────┘        │          │
-                     │        │ GPIO5         │          │
-                     │        │ (control)     │          │
-                     └────────┼───────────────┘          │
-                              │                          │
-                     ┌────────┴──────────────────────────┴───┐
-                     │            PATIO                      │
-                     │  ┌──────────────────────────────────┐ │
-                     │  │  Pedal Emergencia (NC)            │ │
-                     │  │  ┌──────────┐   ┌──────────┐     │ │
-                     │  │  │         ─┼───┤         ─┼──┐  │ │
-                     │  │  └──────────┘   └──────────┘  │  │ │
-                     │  └──────────────────────────────────┘ │
-                     │      │                                │
-                     │      ▼                                │
-                     │  ┌──────────┐                         │
-                     │  │Cerradura │                         │
-                     │  │ Magnética│                         │
-                     │  └────┬─────┘                         │
-                     │       │                               │
-                     │       ▼                               │
-                     │   GND (par 4 BL/MR)                   │
-                     └───────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph Vestibulo["Vestíbulo"]
+        F12V[Fuente 12V +] --> ReleCOM[Relé COM]
+        F12V_GND[Fuente 12V GND] --> GND_UTP[GND común<br/>Par 4 BL/MR]
+        ReleNC[Relé NC] --> UTP_MR[UTP Par 4 MR]
+        GPIO5[GPIO5] -- control --> Rele[Relé]
+    end
 
-Flujo eléctrico:
-  Fuente 12V(+) → Relé COM → Relé NC → UTP par 4 MR → Pedal NC → Cerradura → GND
+    subgraph Patio["Patio"]
+        UTP_MR --> Pedal[Pedal Emergencia<br/>NC]
+        Pedal --> Lock[Cerradura Magnética<br/>12V]
+        Lock --> GND_Lock[GND<br/>Par 4 BL/MR]
+    end
 
-Relé OFF (NC cerrado): 12V llega a cerradura → puerta cerrada
-Relé ON  (NC abierto): 12V cortado en relé → puerta desbloqueada
-Pedal pisado (NC abierto): 12V cortado en patio → apertura física sin MCU
+    style F12V fill:#f66
+    style Lock fill:#6cf
+    style Pedal fill:#fc6
 ```
+
+Flujo: `+12V → Relé COM → NC → Par 4 MR → Pedal NC → Cerradura → GND`
+
+| Relé NC | Pedal NC | Cerradura |
+|---------|----------|-----------|
+| Cerrado (OFF) | Cerrado | 12V → puerta cerrada |
+| Cerrado (OFF) | Abierto | 0V → apertura emergencia |
+| Abierto (ON) | — | 0V → desbloqueo normal |
+| Cerrado (OFF) | Cerrado | 12V → normal |
 
 ### 11.6 Diagrama de flujo — `external_press`
 
