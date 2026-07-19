@@ -341,7 +341,183 @@ apertura tras desbloqueo interno.
 
 Las cadenas se definen como constantes en el YAML (mediante `globals` o lambdas).
 
-## 11. Archivos
+## 11. Diagramas
+
+### 11.1 Máquina de estados del sistema
+
+```mermaid
+stateDiagram-v2
+    [*] --> DESACTIVADO : boot
+    DESACTIVADO --> ACTIVADO : pulsación int. >4s
+    ACTIVADO --> DESACTIVADO : pulsación int. >8s
+
+    state ACTIVADO {
+        [*] --> Reposo
+        Reposo --> Timbre : pulsación externa
+        Reposo --> AbrirPuerta : pulsación interna
+        Timbre --> Reposo : fin doorbell_led_duration
+        AbrirPuerta --> PuertaAbierta : FC = ON
+        AbrirPuerta --> Reposo : FC = OFF
+        PuertaAbierta --> Reposo : FC → OFF
+    }
+
+    state DESACTIVADO {
+        [*] --> Bloqueado
+        Bloqueado --> [*] : pulsación int. >4s
+    }
+```
+
+### 11.2 Diagrama general de conexiones (Vestíbulo)
+
+Conexiones del NodeMCU en el módulo central:
+
+```
+                         ┌─────────────────────────────┐
+                         │         NodeMCU             │
+                         │  ┌───┐ ┌───┐ ┌───┐ ┌───┐  │
+                         │  │GND│ │3V3│ │D1 │ │D2 │  │
+                         │  └───┘ └───┘ └───┘ └───┘  │
+                         │  ┌───┐ ┌───┐ ┌───┐ ┌───┐  │
+                         │  │D3 │ │D4 │ │D5 │ │D6 │  │
+                         │  └───┘ └───┘ └───┘ └───┘  │
+                         └─────────────────────────────┘
+                              │  │  │  │  │  │
+         ┌────────────────────┘  │  │  │  │  └──────────────┐
+         │                       │  │  │  │                 │
+         ▼                       ▼  ▼  ▼  ▼                 ▼
+      ┌──────┐               ┌─────────────────┐       ┌──────┐
+      │ GND  │               │   UTP 4 pares    │       │  5V  │
+      │ común│               └─────────────────┘       │Fuente│
+      └──────┘                      │                  └──────┘
+                                    │
+         ┌──────────────────────────┼──────────────────┐
+         │                          │                  │
+         ▼                          ▼                  ▼
+      ┌──────┐               ┌─────────────────┐   ┌──────┐
+      │ Patio│               │  Salón / Ext.   │   │Fuente│
+      │      │               │ (paneles remotos)│   │ 12V  │
+      └──────┘               └─────────────────┘   └──────┘
+                                                      │
+                                                      ▼
+                                                ┌──────────┐
+                                                │  Relé NC │──→ Cerradura
+                                                └──────────┘
+```
+
+### 11.3 Circuito LED — Panel Interno (salón / vestíbulo)
+
+```
+        UTP par 3 AZ        UTP par 1 NA     UTP par 4 BL/MR
+        (GPIO12 PWM)            (+12V)            (GND)
+              │                   │                 │
+              ▼                   ▼                 ▼
+          ┌──────┐           ┌──────┐           ┌──────┐
+          │ 1kΩ  │           │ 470Ω │           │      │
+          └──┬───┘           └──┬───┘           │      │
+             │                  │               │      │
+             │  BC337           │               │      │
+             │ ┌─┤ ├────────────┘               │      │
+             │ │ B│                             │      │
+             └─┤   C├──┐                       │      │
+               │   E├──┼───────────────────────┘      │
+               └─────┘  │                              │
+                        │    ┌────┐                     │
+                        └────┤ LED├─────────────────────┘
+                             │ 12V│
+                             └────┘
+```
+
+### 11.4 Circuito LED — Panel Externo (patio / exterior)
+
+```
+        UTP par 3 AZ        UTP par 4 BL/MR
+        (GPIO12 PWM)            (GND)
+              │                   │
+              ▼                   ▼
+          ┌──────┐            ┌──────┐
+          │ 150Ω │            │      │
+          └──┬───┘            │      │
+             │                │      │
+          ┌──┴──┐             │      │
+          │ LED │─────────────┘      │
+          └─────┘                    │
+```
+
+### 11.5 Diagrama de flujo — `external_press`
+
+```mermaid
+flowchart TD
+    A[Pulsador externo] --> B{¿ACTIVADO?}
+    B -- No --> FIN[Salir]
+    B -- Sí --> C{¿LED en reposo?}
+    C -- No --> FIN
+    C -- Sí --> D[Cancelar timer_reset_melodia]
+    D --> E[Reproducir melodía actual RTTTL]
+    E --> F[LED → Latido suave 100%]
+    F --> G[Esperar doorbell_led_duration]
+    G --> H[LED → 25%]
+    H --> I[índice melodía + 1]
+    I --> J[Iniciar timer_reset_melodia 60s]
+    J --> FIN
+
+    style FIN fill:#f9f,stroke:#333
+```
+
+### 11.6 Diagrama de flujo — `internal_press`
+
+```mermaid
+flowchart TD
+    A[Pulsador interno] --> B{¿ACTIVADO?}
+    B -- No --> FIN[Salir]
+    B -- Sí --> C[Ejecutar unlock_gate]
+    C --> D[Esperar doorbell_led_duration]
+    D --> E{FC = ON?}
+    E -- Sí --> F[LED → Flash lento + pitido cada gate_open_flash_interval]
+    F --> G[índice melodía → 0]
+    G --> FIN
+    E -- No --> H[LED → 25%]
+    H --> FIN
+
+    style FIN fill:#f9f,stroke:#333
+```
+
+### 11.7 Diagrama de flujo — `unlock_gate`
+
+```mermaid
+flowchart TD
+    A[Inicio unlock_gate] --> B[Relé → ON]
+    B --> C[Iniciar flash_and_beep]
+    C --> D{FC = ON?}
+    D -- No --> E{¿unlock_duration?}
+    E -- No --> D
+    E -- Sí --> F[Relé → OFF]
+    D -- Sí --> F
+    F --> G[Detener flash_and_beep]
+    G --> H[Apagar buzzer]
+    H --> FIN[Fin]
+
+    style FIN fill:#f9f,stroke:#333
+```
+
+### 11.8 Diagrama de flujo — Detección de emergencia
+
+```mermaid
+flowchart TD
+    A[FC → ON] --> B{Relé = ON?}
+    B -- Sí --> C[Desbloqueo normal → stop flash_and_beep, relé OFF]
+    C --> D[Liberar puerta → continuar]
+    B -- No --> E[Apertura no autorizada]
+    E --> F[emergency_alert]
+    F --> G[Alarma 800/1200Hz 5 ciclos]
+    G --> H[LED flash rápido 10s]
+    H --> I{¿Sigue abierta?}
+    I -- Sí --> J[Flash lento + pitido hasta que cierre]
+    I -- No --> K[LED → 25%. Silencio]
+    J --> L[FC → OFF → LED 25%]
+    K --> D
+```
+
+## 12. Archivos
 
 ```
 esphome-gate/
