@@ -454,78 +454,146 @@ Flujo: `+12V → Relé COM → NC → Par 4 MR → Pedal NC → Cerradura → GN
 | Abierto (ON) | — | 0V → desbloqueo normal |
 | Cerrado (OFF) | Cerrado | 12V → normal |
 
-### 11.6 Diagrama de flujo — `external_press`
+### 11.6 Swimlane — `external_press`
 
 ```mermaid
 flowchart TD
-    A[Pulsador externo] --> B{¿ACTIVADO?}
-    B -- No --> FIN[Salir]
-    B -- Sí --> C{¿LED en reposo?}
-    C -- No --> FIN
-    C -- Sí --> D[Cancelar timer_reset_melodia]
-    D --> E[Reproducir melodía actual RTTTL]
-    E --> F[LED → Latido suave 100%]
-    F --> G[Esperar doorbell_led_duration]
-    G --> H[LED → 25%]
-    H --> I[índice melodía + 1]
-    I --> J[Iniciar timer_reset_melodia 60s]
-    J --> FIN
+    subgraph Ext["🟦 PATIO / EXTERIOR"]
+        PULS[Pulsador externo presionado]
+    end
 
-    style FIN fill:#f9f,stroke:#333
+    subgraph MCU["🟩 MCU (Vestíbulo)"]
+        A{"Sistema ACTIVADO?"}
+        A -- No --> FIN_EXT[Ignorar]
+        A -- Sí --> B{"LED en reposo<br/>(sin cooldown)?"}
+        B -- No --> FIN_EXT
+        B -- Sí --> CANCEL[Cancelar timer_reset_melodia]
+        CANCEL --> PLAY[Reproducir melodía actual RTTTL]
+        PLAY --> WAIT[Esperar doorbell_led_duration]
+        WAIT --> ADV[Índice melodía + 1]
+        ADV --> TIMER[Iniciar timer_reset_melodia 60s]
+        TIMER --> FIN_EXT
+
+        TIMEOUT[timer expira 60s] --> RESET[Índice melodía → 0]
+    end
+
+    subgraph PAN["🟧 TODAS LAS ZONAS"]
+        LED[LED → Latido suave 100%]
+        LED2[LED → 25% reposo]
+        MELO[Melodía suena]
+    end
+
+    PULS --> A
+    PLAY --> MELO
+    CANCEL --> LED
+    WAIT --> LED2
+
+    style FIN_EXT fill:#f9f,stroke:#333
 ```
 
-### 11.7 Diagrama de flujo — `internal_press`
+### 11.7 Swimlane — `internal_press`
 
 ```mermaid
 flowchart TD
-    A[Pulsador interno] --> B{¿ACTIVADO?}
-    B -- No --> FIN[Salir]
-    B -- Sí --> C[Ejecutar unlock_gate]
-    C --> D[Esperar doorbell_led_duration]
-    D --> E{FC = ON?}
-    E -- Sí --> F[LED → Flash lento + pitido cada gate_open_flash_interval]
-    F --> G[índice melodía → 0]
-    G --> FIN
-    E -- No --> H[LED → 25%]
-    H --> FIN
+    subgraph Int["🟦 SALÓN / VESTÍBULO"]
+        PULS[Pulsador interno presionado]
+    end
 
-    style FIN fill:#f9f,stroke:#333
+    subgraph MCU["🟩 MCU (Vestíbulo)"]
+        A{"Sistema ACTIVADO?"}
+        A -- No --> FIN_INT[Ignorar]
+        A -- Sí --> UNLOCK[Ejecutar unlock_gate]
+        UNLOCK --> COOLDOWN[Esperar doorbell_led_duration<br/>bloqueo para nueva apertura]
+        COOLDOWN --> CHECK{FC = ON?}
+        CHECK -- Sí --> RESET[Índice melodía → 0]
+        CHECK -- No --> IDLE[LED → 25% reposo]
+        RESET --> FIN_INT
+        IDLE --> FIN_INT
+    end
+
+    subgraph LOCK["🟪 PATIO (Cerradura)"]
+        RELE[Relé ON → cerradura pierde 12V]
+        RELE2[Relé OFF → cerradura recibe 12V]
+        FC[FC detecta puerta abierta]
+    end
+
+    subgraph PAN["🟧 TODAS LAS ZONAS"]
+        LED[LED → Flash rápido]
+        BEEP[Pitidos metro Londres]
+        LED2[LED → Flash lento + pitido]
+    end
+
+    PULS --> A
+    UNLOCK --> RELE
+    UNLOCK --> BEEP
+    UNLOCK --> LED
+    RELE --> RELE2
+    CHECK --> FC
+    FC --> LED2
 ```
 
-### 11.8 Diagrama de flujo — `unlock_gate`
+### 11.8 Swimlane — `unlock_gate`
 
 ```mermaid
 flowchart TD
-    A[Inicio unlock_gate] --> B[Relé → ON]
-    B --> C[Iniciar flash_and_beep]
-    C --> D{FC = ON?}
-    D -- No --> E{¿unlock_duration?}
-    E -- No --> D
-    E -- Sí --> F[Relé → OFF]
-    D -- Sí --> F
-    F --> G[Detener flash_and_beep]
-    G --> H[Apagar buzzer]
-    H --> FIN[Fin]
+    subgraph MCU["🟩 MCU (Vestíbulo)"]
+        START[Inicio unlock_gate]
+        START --> RELAY_ON[Relé → ON]
+        RELAY_ON --> FB[Iniciar flash_and_beep]
+        FB --> LOOP{FC = ON?}
+        LOOP -- No --> TIMEOUT{"¿Pasó unlock_duration?"}
+        TIMEOUT -- No --> LOOP
+        TIMEOUT -- Sí --> RELAY_OFF[Relé → OFF]
+        LOOP -- Sí --> RELAY_OFF
+        RELAY_OFF --> STOP[Detener flash_and_beep]
+        STOP --> BUZZ_OFF[Apagar buzzer]
+    end
 
-    style FIN fill:#f9f,stroke:#333
+    subgraph LOCK["🟪 PATIO"]
+        RELE[Relé NC abierto<br/>Cerradura sin 12V]
+        RELE2[Relé NC cerrado<br/>Cerradura con 12V]
+        FC[Final Carrera = ON<br/>puerta abierta]
+        FC_OFF[Final Carrera = OFF]
+    end
+
+    subgraph PAN["🟧 TODAS LAS ZONAS"]
+        BEEP[Pitido metro Londres<br/>acelerando]
+        SILENCIO[Buzzer OFF]
+    end
+
+    RELAY_ON --> RELE
+    RELAY_OFF --> RELE2
+    FC --> LOOP
+    FB --> BEEP
+    STOP --> SILENCIO
 ```
 
-### 11.9 Diagrama de flujo — Detección de emergencia
+### 11.9 Swimlane — Detección de emergencia
 
 ```mermaid
 flowchart TD
-    A[FC → ON] --> B{Relé = ON?}
-    B -- Sí --> C[Desbloqueo normal → stop flash_and_beep, relé OFF]
-    C --> D[Liberar puerta → continuar]
-    B -- No --> E[Apertura no autorizada]
-    E --> F[emergency_alert]
-    F --> G[Alarma 800/1200Hz 5 ciclos]
-    G --> H[LED flash rápido 10s]
-    H --> I{¿Sigue abierta?}
-    I -- Sí --> J[Flash lento + pitido hasta que cierre]
-    I -- No --> K[LED → 25%. Silencio]
-    J --> L[FC → OFF → LED 25%]
-    K --> D
+    subgraph LOCK["🟪 PATIO"]
+        FC_ON[Final Carrera → ON<br/>puerta se abre]
+        FC_OFF[Final Carrera → OFF<br/>puerta se cierra]
+    end
+
+    subgraph MCU["🟩 MCU (Vestíbulo)"]
+        EVT{Relé = ON?}
+        EVT -- Sí --> NORMAL[Desbloqueo normal<br/>→ stop flash_and_beep<br/>→ Relé OFF]
+        EVT -- No --> ALERT[Apertura no autorizada]
+        ALERT --> EMERG[emergency_alert]
+        EMERG --> ALARM[Alarma tono alternado<br/>800/1200Hz × 5 ciclos]
+        ALARM --> FLASH[LED flash rápido 10s]
+        FLASH --> CHECK{¿Sigue abierta?}
+        CHECK -- Sí --> SLOW[Flash lento + pitido<br/>gate_open_flash_interval]
+        CHECK -- No --> SILENT[LED → 25%. Silencio]
+        SLOW --> FC_OFF
+        FC_OFF --> SILENT
+    end
+
+    FC_ON --> EVT
+    NORMAL --> FIN[Fin emergencia]
+    SILENT --> FIN
 ```
 
 ## 12. Archivos
