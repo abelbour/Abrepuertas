@@ -41,16 +41,16 @@ flowchart TB
 
 ## Cableado (UTP Cat5, 4 pares)
 
-| Par | Hilo | Señal | Destino |
-|-----|------|-------|---------|
-| 1 | BL | GPIO4 (pulsador interno) | Salón |
-| 1 | NA | **12V siempre vivo** (LEDs internos + relé COM) | Todas |
-| 2 | BL/V | GPIO16 (pulsador externo, pull-up ext. en vestíbulo) | Patio + Ext. |
-| 2 | V | GPIO13 (final carrera) | Patio |
-| 3 | BL/AZ | GPIO14 (buzzer musical) | Todas |
-| 3 | AZ | **GPIO12 (PWM LEDs)** — señal común a todas | Todas |
-| 4 | BL/MR | **GND común** (señales + cerradura + LEDs) | Todas |
-| 4 | MR | Cerradura (vía relé NC, 12V conmutado desde par 1 NA) | Patio |
+| Par | Hilo | Señal | Emoji | Destino |
+|-----|------|-------|-------|---------|
+| 1 | BL | GPIO4 (pulsador interno) | 🔹 | Salón |
+| 1 | NA | **12V siempre vivo** (LEDs internos + relé COM) | ⚡🔒 | Todas |
+| 2 | BL/V | GPIO16 (pulsador externo) | 🔸 | Patio + Ext. |
+| 2 | V | GPIO13 (final carrera) | 🚪 | Patio |
+| 3 | BL/AZ | GPIO14 (buzzer musical) | 🔊 | Todas |
+| 3 | AZ | GPIO12 (PWM LEDs) | 💡 | Todas |
+| 4 | BL/MR | **GND común** (señales + cerradura + LEDs) | ⬛ | Todas |
+| 4 | MR | Cerradura 12V (vía relé NC) | 🔒 | Patio |
 
 - 12V siempre vivo (par 1 NA): alimenta LEDs internos (vía transistor) y el COM del relé
 - Relé NC en vestíbulo conmuta 12V al hilo MR → cerradura en patio
@@ -59,31 +59,31 @@ flowchart TB
 
 ## 1. Resumen de Hardware
 
-| Componente | Propósito |
-|-----------|-----------|
-| NodeMCU ESP8266 | Microcontrolador ejecutando ESPHome |
-| Fuente 5V | Alimentación NodeMCU (local en vestíbulo) |
-| Fuente 12V | Alimentación cerradura + LEDs (local en vestíbulo) |
-| Relé | Conmuta 12V de la cerradura. NC: cerradura alimentada (puerta cerrada). NA: libre. |
-| Cerradura Magnética | Mantiene la puerta cerrada mientras recibe 12V |
-| Buzzer Musical (RTTTL) | Zumbador piezoeléctrico — melodía timbre, pitidos desbloqueo y alarma de emergencia. Una unidad por zona (×4). |
-| Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
-| Pulsadores Externos (×2) | Patio y exterior — GPIO16 en paralelo |
-| LEDs Estado 12V (×4) | Todas las zonas — conmutados por transistor único |
-| Transistor NPN BC337 (×2) | Paneles internos — conmutan 12V al LED desde GPIO12 |
-| Final de Carrera (NA) | GPIO13 — detecta puerta abierta/cerrada y apertura por emergencia |
-| Pedal de Emergencia | Corte físico: NC en serie con 12V de la cerradura. Sin señal al MCU. |
+| Emoji | Componente | Propósito |
+|-------|-----------|-----------|
+| 🧠 | NodeMCU ESP8266 | Microcontrolador ejecutando ESPHome |
+| ⚡ | Fuente 5V | Alimentación NodeMCU (local en vestíbulo) |
+| ⚡🔒 | Fuente 12V | Alimentación cerradura + LEDs (local en vestíbulo) |
+| 🔒 | Relé | Conmuta 12V de la cerradura (NC = cerrada) |
+| 🔒 | Cerradura Magnética | Mantiene la puerta cerrada mientras recibe 12V |
+| 🔊 | Buzzer Musical (RTTTL) | Zumbador piezoeléctrico — melodía y pitidos. ×4 unidades |
+| 🔹 | Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
+| 🔸 | Pulsadores Externos (×2) | Patio y exterior — GPIO16 en paralelo |
+| 💡 | LEDs Estado (×4) | 12V internos, 3V externos |
+| 🔹💡 | Transistor NPN BC337 (×2) | Paneles internos — conmutan 12V al LED desde GPIO12 |
+| 🚪 | Final de Carrera (NA) | GPIO13 — detecta puerta abierta/cerrada |
+| 🚫 | Pedal de Emergencia | Corte físico NC en serie con 12V de la cerradura |
 
 ## 2. Asignación de Pines
 
-| GPIO | Componente | Tipo |
-|------|-----------|------|
-| GPIO4 | Pulsadores internos (salón + vestíbulo, paralelo) | Entrada (pull-up, invertido) |
-| GPIO16 | Pulsadores externos (patio + exterior, paralelo) | Entrada (pull-up ext. 10kΩ, NA a GND) |
-| GPIO12 | PWM LEDs — señal común a todas las zonas | Salida (PWM) |
-| GPIO14 | Buzzer Musical (×4, todas, paralelo) | Salida (PWM 2000 Hz, RTTTL) |
-| GPIO5 | Relé de Cerradura (NC → lock, NA → libre) | Salida (relé) |
-| GPIO13 | Final de Carrera + detección emergencia | Entrada (pull-up, NA) |
+| GPIO | Emoji | Componente | Tipo |
+|------|-------|-----------|------|
+| GPIO4 | 🔹 | Pulsadores internos (salón + vestíbulo, paralelo) | Entrada (pull-up, invertido) |
+| GPIO16 | 🔸 | Pulsadores externos (patio + exterior, paralelo) | Entrada (pull-up ext.) |
+| GPIO12 | 💡 | PWM LEDs — señal común a todas las zonas | Salida (PWM) |
+| GPIO14 | 🔊 | Buzzer Musical (×4, todas, paralelo) | Salida (PWM 2000 Hz, RTTTL) |
+| GPIO5 | 🔒 | Relé de Cerradura (NC → lock, NA → libre) | Salida (relé) |
+| GPIO13 | 🚪 | Final de Carrera + detección emergencia | Entrada (pull-up, NA) |
 
 ## 3. Definición de Componentes
 
@@ -167,17 +167,17 @@ Al recibir final carrera = ON:
 
 ## 6. Comportamiento
 
-| Evento | Relé (cerradura) | Buzzer Musical (RTTTL) | LED |
-|--------|-----------------|----------------------|-----|
-| **Sistema DESACTIVADO** | ON (permanentemente) | — | OFF |
-| **Sistema ACTIVADO** (reposo) | — | — | 25% brillo |
-| Pulsación int. >4s (DESACTIVADO → ACTIVADO) | OFF | Secuencia activación | 3 flashes rápidos → 25% |
-| Pulsación int. >8s (ACTIVADO → DESACTIVADO) | ON perm. | Secuencia desactivación | 3 flashes lentos → OFF |
-| Pulsador externo (ACTIVADO) | — | Melodía actual | Latido suave 100% `doorbell_led_duration` |
-| Pulsador interno (ACTIVADO) | ON `unlock_duration` | Pitidos metro Londres | Flash rápido durante desbloqueo |
-| Puerta abierta tras desbloqueo | OFF | pitido corto sincronizado con el flash | Flash lento `gate_open_flash_interval` |
-| Puerta cerrada tras desbloqueo | OFF | — | 25% brillo (reposo) |
-| Emergencia (FC ON, relé OFF) | — | Alarma tono alternado 800/1200Hz | Fast Flash 10s |
+| Evento | 🔒 Relé | 🔊 Buzzer | 💡 LED |
+|--------|:------:|:--------:|:-----:|
+| **Sistema DESACTIVADO** | ON (perm.) | — | OFF |
+| **Sistema ACTIVADO** (reposo) | — | — | 25% |
+| 🔹 >4s (DESACT → ACTIVAR) | OFF | Secuencia activación | 3 flashes → 25% |
+| 🔹 >8s (ACTIV → DESACTIVAR) | ON (perm.) | Secuencia desactivación | 3 flashes → OFF |
+| 🔸 Externo (ACTIVADO) | — | Melodía actual | Latido 100% `doorbell_led_duration` |
+| 🔹 Interno (ACTIVADO) | ON `unlock_duration` | Pitidos metro Londres | Flash rápido |
+| 🚪 Abierta tras desbloqueo | OFF | Pitido c/flash | Flash lento `gate_open_flash_interval` |
+| 🚪 Cerrada tras desbloqueo | OFF | — | 25% |
+| 🚨 Emergencia (🚪ON + 🔒OFF) | — | Alarma 800/1200Hz | Fast Flash 10s |
 
 Mientras el sistema está DESACTIVADO el relé permanece ON y cualquier pulsación (externa o interna) es ignorada.
 Los pulsadores externos **nunca desbloquean** la puerta — solo tocan el timbre.
@@ -338,32 +338,32 @@ stateDiagram-v2
 ```mermaid
 flowchart LR
     subgraph NodeMCU
-        G4[GPIO4 - Pulsador int]
-        G16[GPIO16 - Pulsador ext]
-        G12[GPIO12 - PWM LEDs]
-        G14[GPIO14 - Buzzer]
-        G5[GPIO5 - Relé]
-        G13[GPIO13 - FC]
+        G4["GPIO4 🔹 Pulsador int"]
+        G16["GPIO16 🔸 Pulsador ext"]
+        G12["GPIO12 💡 PWM LEDs"]
+        G14["GPIO14 🔊 Buzzer"]
+        G5["GPIO5 🔒 Relé"]
+        G13["GPIO13 🚪 FC"]
     end
 
-    subgraph UTP["UTP Cat5 (4 pares)"]
-        P1["Par 1: BL→GPIO4, NA→+12V"]
-        P2["Par 2: BL/V→GPIO16, V→GPIO13"]
-        P3["Par 3: BL/AZ→GPIO14, AZ→GPIO12"]
-        P4["Par 4: BL/MR→GND, MR→Cerradura"]
+    subgraph UTP["📦 UTP Cat5 (4 pares)"]
+        P1["Par 1: BL 🔹 / NA ⚡"]
+        P2["Par 2: BL/V 🔸 / V 🚪"]
+        P3["Par 3: BL/AZ 🔊 / AZ 💡"]
+        P4["Par 4: BL/MR ⬛ / MR 🔒"]
     end
 
-    subgraph Vestibulo["Vestíbulo (local)"]
-        F5V[Fuente 5V] --> NodeMCU
-        F12V[Fuente 12V] --> Rele[Relé NC]
+    subgraph Vestibulo["📍 Vestíbulo (local)"]
+        F5V["⚡ Fuente 5V"] --> NodeMCU
+        F12V["⚡🔒 Fuente 12V"] --> Rele["🔒 Relé NC"]
         G5 -- control --> Rele
         Rele --> P4
     end
 
-    subgraph Paneles["Paneles Remotos"]
-        Salon["Salón<br/>(int + LED 12V + buzzer)"]
-        Patio["Patio<br/>(ext + LED 3V + buzzer + FC + cerradura)"]
-        Ext["Exterior<br/>(ext + LED 3V + buzzer)"]
+    subgraph Paneles["📌 Paneles Remotos"]
+        Salon["🏠 Salón<br/>🔹💡🔊"]
+        Patio["🚪 Patio<br/>🔸🚪🔊💡🔒"]
+        Ext["🌳 Exterior<br/>🔸💡🔊"]
     end
 
     G4 --> P1
@@ -372,8 +372,7 @@ flowchart LR
     G14 --> P3
     G13 --> P2
     P1 --> Salon
-    P2 --> Patio
-    P2 --> Ext
+    P2 --> Patio & Ext
     P3 --> Salon & Patio & Ext
     P4 --> Patio
 ```
@@ -382,20 +381,20 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    subgraph UTP["UTP"]
-        AZ[Par 3 AZ<br/>GPIO12 PWM]
-        NA[Par 1 NA<br/>+12V]
-        GND[Par 4 BL/MR<br/>GND]
+    subgraph UTP["📦 UTP"]
+        AZ["💡 Par 3 AZ<br/>GPIO12 PWM"]
+        NA["⚡ Par 1 NA<br/>+12V"]
+        GND["⬛ Par 4 BL/MR<br/>GND"]
     end
 
-    subgraph Panel["Panel Interno"]
+    subgraph Panel["🔹 Panel Interno"]
         R1[1kΩ] --> B[BC337 Base]
         AZ --> R1
         B --> C[BC337 Colector]
         NA --> R2[470Ω] --> C
         E[BC337 Emisor] --> GND
 
-        C --> LED12[LED 12V]
+        C --> LED12["💡 LED 12V"]
         LED12 --> GND
     end
 ```
@@ -404,22 +403,22 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    subgraph UTP["UTP"]
-        BLV[Par 2 BL/V<br/>GPIO16]
-        AZ[Par 3 AZ<br/>GPIO12 PWM]
-        BLAZ[Par 3 BL/AZ<br/>GPIO14 Buzzer]
-        GND[Par 4 BL/MR<br/>GND]
+    subgraph UTP["📦 UTP"]
+        BLV["🔸 Par 2 BL/V<br/>GPIO16"]
+        AZ["💡 Par 3 AZ<br/>GPIO12 PWM"]
+        BLAZ["🔊 Par 3 BL/AZ<br/>GPIO14 Buzzer"]
+        GND["⬛ Par 4 BL/MR<br/>GND"]
     end
 
-    subgraph Panel["Panel Externo"]
+    subgraph Panel["🔸 Panel Externo"]
         BLV --> R10k[10kΩ] --> Vcc[+3.3V<br/>pull-up]
-        BLV --> Puls[Pulsador Ext<br/>NA]
+        BLV --> Puls["🔸 Pulsador Ext<br/>NA"]
         Puls --> GND
 
-        AZ --> R150[150Ω] --> LED3[LED 3V]
+        AZ --> R150[150Ω] --> LED3["💡 LED 3V"]
         LED3 --> GND
 
-        BLAZ --> Buz[Buzzer Piezo]
+        BLAZ --> Buz["🔊 Buzzer Piezo"]
         Buz --> GND
     end
 ```
@@ -428,17 +427,17 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    subgraph Vestibulo["Vestíbulo"]
-        F12V[Fuente 12V +] --> ReleCOM[Relé COM]
-        F12V_GND[Fuente 12V GND] --> GND_UTP[GND común<br/>Par 4 BL/MR]
-        ReleNC[Relé NC] --> UTP_MR[UTP Par 4 MR]
-        GPIO5[GPIO5] -- control --> Rele[Relé]
+    subgraph Vestibulo["📍 Vestíbulo"]
+        F12V["⚡🔒 Fuente 12V +"] --> ReleCOM["🔒 Relé COM"]
+        F12V_GND["⚡🔒 GND"] --> GND_UTP["⬛ GND común<br/>Par 4 BL/MR"]
+        ReleNC["🔒 Relé NC"] --> UTP_MR["🔒 Par 4 MR"]
+        G5["GPIO5 🔒"] -- control --> Rele["🔒 Relé"]
     end
 
-    subgraph Patio["Patio"]
-        UTP_MR --> Pedal[Pedal Emergencia<br/>NC]
-        Pedal --> Lock[Cerradura Magnética<br/>12V]
-        Lock --> GND_Lock[GND<br/>Par 4 BL/MR]
+    subgraph Patio["🚪 Patio"]
+        UTP_MR --> Pedal["🚫 Pedal Emergencia<br/>NC"]
+        Pedal --> Lock["🔒 Cerradura Magnética<br/>12V"]
+        Lock --> GND_Lock["⬛ GND<br/>Par 4 BL/MR"]
     end
 
     style F12V fill:#f66
@@ -448,12 +447,11 @@ flowchart LR
 
 Flujo: `+12V → Relé COM → NC → Par 4 MR → Pedal NC → Cerradura → GND`
 
-| Relé NC | Pedal NC | Cerradura |
-|---------|----------|-----------|
-| Cerrado (OFF) | Cerrado | 12V → puerta cerrada |
-| Cerrado (OFF) | Abierto | 0V → apertura emergencia |
-| Abierto (ON) | — | 0V → desbloqueo normal |
-| Cerrado (OFF) | Cerrado | 12V → normal |
+| 🔒 Relé NC | 🚫 Pedal NC | 🔒 Cerradura |
+|:----------:|:----------:|:------------:|
+| Cerrado (OFF) | Cerrado | ⚡ 12V → puerta cerrada |
+| Cerrado (OFF) | Abierto | ⬛ 0V → apertura emergencia |
+| Abierto (ON) | — | ⬛ 0V → desbloqueo normal |
 
 ### 11.6 Swimlane — `external_press`
 
