@@ -78,15 +78,18 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | Par | Hilo | Señal | Destino |
 |-----|------|-------|---------|
 | 1 | BL | GPIO4 (pulsador interno) | Salón |
-| 1 | NA | GND | Salón |
-| 2 | BL/V | GPIO16 (pulsador externo) | Patio + Ext. |
-| 2 | V | **12V conmutado** (LEDs vía transistor) | Todas las zonas |
-| 3 | BL/AZ | GPIO14 (buzzer musical) | Todas las zonas |
-| 3 | AZ | GND | Todas las zonas |
-| 4 | BL/MR | Relay NC (12V cerradura) | Patio |
-| 4 | MR | GPIO13 (final carrera) | Patio |
+| 1 | NA | **12V siempre vivo** (LEDs internos + relé COM) | Todas |
+| 2 | BL/V | GPIO16 (pulsador externo, pull-up ext. en vestíbulo) | Patio + Ext. |
+| 2 | V | GPIO13 (final carrera) | Patio |
+| 3 | BL/AZ | GPIO14 (buzzer musical) | Todas |
+| 3 | AZ | **GPIO12 (PWM LEDs)** — señal común a todas | Todas |
+| 4 | BL/MR | **GND común** (señales + cerradura + LEDs) | Todas |
+| 4 | MR | Cerradura (vía relé NC, 12V conmutado desde par 1 NA) | Patio |
 
-El retorno GND de la cerradura va por los hilos NA y AZ (pares 1 y 3). La alimentación 5V del NodeMCU es local en el módulo del vestíbulo.
+- 12V siempre vivo (par 1 NA): alimenta LEDs internos (vía transistor) y el COM del relé
+- Relé NC en vestíbulo conmuta 12V al hilo MR → cerradura en patio
+- GND común (par 4 BL/MR) para todas las señales y retorno de cerradura
+- Cada panel lleva su resistencia local (ver sección 3.6)
 
 ## 1. Resumen de Hardware
 
@@ -101,7 +104,7 @@ El retorno GND de la cerradura va por los hilos NA y AZ (pares 1 y 3). La alimen
 | Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
 | Pulsadores Externos (×2) | Patio y exterior — GPIO16 en paralelo |
 | LEDs Estado 12V (×4) | Todas las zonas — conmutados por transistor único |
-| Transistor NPN (BC337) | Conmuta 12V a los LEDs desde GPIO12 |
+| Transistor NPN BC337 (×2) | Paneles internos — conmutan 12V al LED desde GPIO12 |
 | Final de Carrera (NA) | GPIO13 — detecta puerta abierta/cerrada y apertura por emergencia |
 | Pedal de Emergencia | Corte físico: NC en serie con 12V de la cerradura. Sin señal al MCU. |
 
@@ -111,7 +114,7 @@ El retorno GND de la cerradura va por los hilos NA y AZ (pares 1 y 3). La alimen
 |------|-----------|------|
 | GPIO4 | Pulsadores internos (salón + vestíbulo, paralelo) | Entrada (pull-up, invertido) |
 | GPIO16 | Pulsadores externos (patio + exterior, paralelo) | Entrada (pull-up ext. 10kΩ, NA a GND) |
-| GPIO12 | Base transistor NPN (BC337) → conmuta 12V a LEDs | Salida (PWM, 1kΩ en serie) |
+| GPIO12 | PWM LEDs — señal común a todas las zonas | Salida (PWM) |
 | GPIO14 | Buzzer Musical (×4, todas, paralelo) | Salida (PWM 2000 Hz, RTTTL) |
 | GPIO5 | Relé de Cerradura (NC → lock, NA → libre) | Salida (relé) |
 | GPIO13 | Final de Carrera + detección emergencia | Entrada (pull-up, NA) |
@@ -151,9 +154,23 @@ El retorno GND de la cerradura va por los hilos NA y AZ (pares 1 y 3). La alimen
 - La alarma de emergencia usa control directo PWM.
 
 ### 3.6 LEDs Estado
-- GPIO12 → 1kΩ → base BC337 (NPN). Colector conmuta 12V a todas las zonas.
-- Emisor a GND. 12V común al ánodo de cada LED, cátodo vía resistor limitador (470Ω) al hilo de colector.
-- PWM desde GPIO12 controla el transistor, los cuatro LEDs reciben el mismo brillo.
+- GPIO12 PWM → UTP par 3 AZ. Señal común a las 4 zonas.
+- Cada panel tiene su propia conversión local:
+
+**Paneles internos (salón, vestíbulo)** — LED 12V transistorizado:
+```
+UTP par 3 AZ ──┤1kΩ├── base BC337
+UTP par 1 NA (12V) ──┤ resistor LED├── colector
+UTP par 4 BL/MR (GND) ── emisor
+```
+
+**Paneles externos (patio, exterior)** — LED directo:
+```
+UTP par 3 AZ ──┤150Ω├─── LED ─── UTP par 4 BL/MR (GND)
+```
+(GPIO12 conmuta 3.3V PWM directamente al LED vía resistencia limitadora.)
+
+- PWM desde GPIO12 controla todo, los cuatro LEDs reciben el mismo brillo.
 - **Efectos:**
   - *Latido suave*: oscilación 50%–100% con transición de 1s
   - *Flash rápido*: 200ms ON / 200ms OFF
