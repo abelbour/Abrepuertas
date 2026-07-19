@@ -80,7 +80,7 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | 1 | BL | GPIO4 (pulsador interno) | Salón |
 | 1 | NA | GND | Salón |
 | 2 | BL/V | GPIO16 (pulsador externo) | Patio + Ext. |
-| 2 | V | GPIO12 (LEDs) | Todas las zonas |
+| 2 | V | **12V conmutado** (LEDs vía transistor) | Todas las zonas |
 | 3 | BL/AZ | GPIO14 (buzzer musical) | Todas las zonas |
 | 3 | AZ | GND | Todas las zonas |
 | 4 | BL/MR | Relay NC (12V cerradura) | Patio |
@@ -94,13 +94,14 @@ El retorno GND de la cerradura va por los hilos NA y AZ (pares 1 y 3). La alimen
 |-----------|-----------|
 | NodeMCU ESP8266 | Microcontrolador ejecutando ESPHome |
 | Fuente 5V | Alimentación NodeMCU (local en vestíbulo) |
-| Fuente 12V | Alimentación cerradura (local en vestíbulo) |
+| Fuente 12V | Alimentación cerradura + LEDs (local en vestíbulo) |
 | Relé | Conmuta 12V de la cerradura. NC: cerradura alimentada (puerta cerrada). NA: libre. |
 | Cerradura Magnética | Mantiene la puerta cerrada mientras recibe 12V |
 | Buzzer Musical (RTTTL) | Zumbador piezoeléctrico — melodía timbre, pitidos desbloqueo y alarma de emergencia. Una unidad por zona (×4). |
 | Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
 | Pulsadores Externos (×2) | Patio y exterior — GPIO16 en paralelo |
-| LEDs Estado (×4) | Todas las zonas — GPIO12 en paralelo |
+| LEDs Estado 12V (×4) | Todas las zonas — conmutados por transistor único |
+| Transistor NPN (BC337) | Conmuta 12V a los LEDs desde GPIO12 |
 | Final de Carrera (NA) | GPIO13 — detecta puerta abierta/cerrada y apertura por emergencia |
 | Pedal de Emergencia | Corte físico: NC en serie con 12V de la cerradura. Sin señal al MCU. |
 
@@ -110,7 +111,7 @@ El retorno GND de la cerradura va por los hilos NA y AZ (pares 1 y 3). La alimen
 |------|-----------|------|
 | GPIO4 | Pulsadores internos (salón + vestíbulo, paralelo) | Entrada (pull-up, invertido) |
 | GPIO16 | Pulsadores externos (patio + exterior, paralelo) | Entrada (pull-up ext. 10kΩ, NA a GND) |
-| GPIO12 | LEDs Estado (×4, todas, paralelo) | Salida (PWM, monocromática) |
+| GPIO12 | Base transistor NPN (BC337) → conmuta 12V a LEDs | Salida (PWM, 1kΩ en serie) |
 | GPIO14 | Buzzer Musical (×4, todas, paralelo) | Salida (PWM 2000 Hz, RTTTL) |
 | GPIO5 | Relé de Cerradura (NC → lock, NA → libre) | Salida (relé) |
 | GPIO13 | Final de Carrera + detección emergencia | Entrada (pull-up, NA) |
@@ -150,7 +151,9 @@ El retorno GND de la cerradura va por los hilos NA y AZ (pares 1 y 3). La alimen
 - La alarma de emergencia usa control directo PWM.
 
 ### 3.6 LEDs Estado
-- GPIO12 (PWM). Paralelo a todas las zonas. Luz monocromática con brillo regulable.
+- GPIO12 → 1kΩ → base BC337 (NPN). Colector conmuta 12V a todas las zonas.
+- Emisor a GND. 12V común al ánodo de cada LED, cátodo vía resistor limitador (470Ω) al hilo de colector.
+- PWM desde GPIO12 controla el transistor, los cuatro LEDs reciben el mismo brillo.
 - **Efectos:**
   - *Latido suave*: oscilación 50%–100% con transición de 1s
   - *Flash rápido*: 200ms ON / 200ms OFF
