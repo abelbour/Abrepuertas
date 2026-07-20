@@ -41,21 +41,21 @@ flowchart TB
 
 ## Cableado (UTP Cat5, 4 pares)
 
-| Par | Hilo | Señal | Emoji | Destino |
-|-----|------|-------|-------|---------|
-| 1 | BL | GPIO4 (pulsador interno) | 🔹 | Salón |
-| 1 | NA | **12V siempre vivo** (LEDs internos + relé COM) | ⚡🔒 | Todas |
-| 2 | BL/V | GPIO16 (pulsador externo) | 🔸 | Patio + Ext. |
-| 2 | V | GPIO13 (final carrera) | 🚪 | Patio |
-| 3 | BL/AZ | GPIO14 (buzzer musical) | 🔊 | Todas |
-| 3 | AZ | GPIO12 (PWM LEDs) | 💡 | Todas |
-| 4 | BL/MR | **GND común** (señales + cerradura + LEDs) | ⬛ | Todas |
-| 4 | MR | Cerradura 12V (vía relé NC) | 🔒 | Patio |
+| Par | Hilo | Señal | Emoji | Destino | Grupo |
+|-----|------|-------|-------|---------|-------|
+| 1 | BL | GPIO4 (pulsador interno) | 🔹 | Salón | Entradas |
+| 1 | NA | GPIO16 (pulsador externo) | 🔸 | Patio + Ext. | Entradas |
+| 2 | BL/V | GPIO13 (final carrera) | 🚪 | Patio | Patio |
+| 2 | V | Cerradura 12V (vía relé NC) | 🔒 | Patio | Patio |
+| 3 | BL/AZ | GPIO14 (buzzer musical) | 🔊 | Todas | Broadcast |
+| 3 | AZ | GPIO12 (PWM LEDs) | 💡 | Todas | Broadcast |
+| 4 | BL/MR | **GND común** | ⬛ | Todas | Power |
+| 4 | MR | **12V siempre vivo** | ⚡ | Todas | Power |
 
-- 12V siempre vivo (par 1 NA): alimenta LEDs internos (vía transistor) y el COM del relé
-- Relé NC en vestíbulo conmuta 12V al hilo MR → cerradura en patio
-- GND común (par 4 BL/MR) para todas las señales y retorno de cerradura
-- Cada panel lleva su resistencia local (ver sección 3.6)
+- Par 1 = botones, par 2 = patio (FC + cerradura), par 3 = broadcast, par 4 = alimentación
+- 12V viaja por par 4 MR junto con GND (par 4 BL/MR) — mejor para la fuente
+- Relé NC en vestíbulo conmuta 12V desde par 4 MR hacia par 2 V → cerradura en patio
+- Cada panel solo pela los pares que necesita (ej. exterior solo pares 1, 3, 4)
 
 ## 1. Resumen de Hardware
 
@@ -127,7 +127,7 @@ flowchart TB
 **Paneles internos (salón, vestíbulo)** — LED 12V transistorizado:
 ```
 UTP par 3 AZ ──┤1kΩ├── base BC337
-UTP par 1 NA (12V) ──┤ resistor LED├── colector
+UTP par 4 MR (12V) ──┤ resistor LED├── colector
 UTP par 4 BL/MR (GND) ── emisor
 ```
 
@@ -364,17 +364,17 @@ flowchart LR
     end
 
     subgraph UTP["📦 UTP Cat5 (4 pares)"]
-        P1["Par 1: BL 🔹 / NA ⚡"]
-        P2["Par 2: BL/V 🔸 / V 🚪"]
-        P3["Par 3: BL/AZ 🔊 / AZ 💡"]
-        P4["Par 4: BL/MR ⬛ / MR 🔒"]
+        P1["Par 1<br/>BL 🔹 / NA 🔸"]
+        P2["Par 2<br/>BL/V 🚪 / V 🔒"]
+        P3["Par 3<br/>BL/AZ 🔊 / AZ 💡"]
+        P4["Par 4<br/>BL/MR ⬛ / MR ⚡"]
     end
 
     subgraph Vestibulo["📍 Vestíbulo (local)"]
         F5V["⚡ Fuente 5V"] --> NodeMCU
-        F12V["⚡🔒 Fuente 12V"] --> Rele["🔒 Relé NC"]
-        G5 -- control --> Rele
-        Rele --> P4
+        F12V["⚡🔒 Fuente 12V"] --> P4
+        G5 -- control --> Rele["🔒 Relé NC"]
+        Rele --> P2
     end
 
     subgraph Paneles["📌 Paneles Remotos"]
@@ -383,15 +383,13 @@ flowchart LR
         Ext["🌳 Exterior<br/>🔸💡🔊"]
     end
 
-    G4 --> P1
-    G16 --> P2
-    G12 --> P3
-    G14 --> P3
+    G4 & G16 --> P1
     G13 --> P2
-    P1 --> Salon
-    P2 --> Patio & Ext
+    G12 & G14 --> P3
+    P1 --> Salon & Patio & Ext
+    P2 --> Patio
     P3 --> Salon & Patio & Ext
-    P4 --> Patio
+    P4 --> Salon & Patio & Ext
 ```
 
 ### 11.3 Circuito — Panel Interno (salón / vestíbulo)
@@ -400,19 +398,23 @@ flowchart LR
 flowchart LR
     subgraph UTP["📦 UTP"]
         AZ["💡 Par 3 AZ<br/>GPIO12 PWM"]
-        NA["⚡ Par 1 NA<br/>+12V"]
+        P4MR["⚡ Par 4 MR<br/>+12V"]
         GND["⬛ Par 4 BL/MR<br/>GND"]
+        P1BL["🔹 Par 1 BL<br/>GPIO4"]
     end
 
     subgraph Panel["🔹 Panel Interno"]
         R1[1kΩ] --> B[BC337 Base]
         AZ --> R1
         B --> C[BC337 Colector]
-        NA --> R2[470Ω] --> C
+        P4MR --> R2[470Ω] --> C
         E[BC337 Emisor] --> GND
 
         C --> LED12["💡 LED 12V"]
         LED12 --> GND
+
+        P1BL --> BtnInt["🔹 Pulsador Int<br/>NA → GND"]
+        BtnInt --> GND
     end
 ```
 
@@ -421,14 +423,14 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph UTP["📦 UTP"]
-        BLV["🔸 Par 2 BL/V<br/>GPIO16"]
+        NA["🔸 Par 1 NA<br/>GPIO16"]
         AZ["💡 Par 3 AZ<br/>GPIO12 PWM"]
         BLAZ["🔊 Par 3 BL/AZ<br/>GPIO14 Buzzer"]
         GND["⬛ Par 4 BL/MR<br/>GND"]
     end
 
     subgraph Panel["🔸 Panel Externo"]
-        BLV --> Puls["🔸 Pulsador Ext<br/>NA"]
+        NA --> Puls["🔸 Pulsador Ext<br/>NA"]
         Puls --> GND
 
         AZ --> R150[150Ω] --> LED3["💡 LED 3V"]
@@ -445,14 +447,15 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph Vestibulo["📍 Vestíbulo"]
-        F12V["⚡🔒 Fuente 12V +"] --> ReleCOM["🔒 Relé COM"]
-        F12V_GND["⚡🔒 GND"] --> GND_UTP["⬛ GND común<br/>Par 4 BL/MR"]
-        ReleNC["🔒 Relé NC"] --> UTP_MR["🔒 Par 4 MR"]
+        F12V["⚡🔒 Fuente 12V +"] --> P4_MR["Par 4 MR ⚡"]
+        F12V_GND["⚡🔒 GND"] --> GND["⬛ Par 4 BL/MR"]
+        P4_MR --> ReleCOM["🔒 Relé COM"]
+        ReleNC["🔒 Relé NC"] --> P2_V["Par 2 V 🔒"]
         G5["GPIO5 🔒"] -- control --> Rele["🔒 Relé"]
     end
 
     subgraph Patio["🚪 Patio"]
-        UTP_MR --> Pedal["🚫 Pedal Emergencia<br/>NC"]
+        P2_V --> Pedal["🚫 Pedal Emergencia<br/>NC"]
         Pedal --> Lock["🔒 Cerradura Magnética<br/>12V"]
         Lock --> GND_Lock["⬛ GND<br/>Par 4 BL/MR"]
     end
@@ -462,7 +465,7 @@ flowchart LR
     style Pedal fill:#fc6
 ```
 
-Flujo: `+12V → Relé COM → NC → Par 4 MR → Pedal NC → Cerradura → GND`
+Flujo: `+12V → Par 4 MR → Relé COM → NC → Par 2 V → Pedal NC → Cerradura → GND`
 
 | 🔒 Relé NC | 🚫 Pedal NC | 🔒 Cerradura |
 |:----------:|:----------:|:------------:|
