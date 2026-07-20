@@ -27,26 +27,26 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 
 | Componente | Cant. | Precio Unit. | Subtotal | Especificación |
 |-----------|:-----:|:-----------:|:--------:|----------------|
-| NodeMCU ESP8266 | 1 | $11.106,90 | $11.106,90 ✅ | ESP-12E, CP2102, microUSB |
+| [NodeMCU ESP8266](https://tienda.lega.ar/producto/esp8266-lua-wifi-v3-ch340-para-nodemcu) | 1 | $11.106,90 | $11.106,90 ✅ | ESP-12E, CP2102, microUSB |
 | Fuente 5V | 1 | $9.315,95 | $9.315,95 | 5V DC, ≥1A, tipo cargador USB |
-| Fuente 12V | 1 | $13.349,35 | $13.349,35 | 12V DC, ≥2A, tipo brick |
-| Relé NC | 1 | $1.444,80 | $1.444,80 | Módulo relé 1 canal, 5V bobina, 10A/250V contacto |
-| Cerradura Magnética | 1 | $69.786,85 | $69.786,85 ✅ | 12V, tipo ML-1501 o similar, ≤1.5A |
-| Final de Carrera | 1 | $1.730,75 | $1.730,75 | NA, microswitch con rodillo |
+| [Fuente 12V](https://tienda.lega.ar/producto/fu12v2000-fuente-switching-12-v-2-a-) | 1 | $13.349,35 | $13.349,35 | 12V DC, ≥2A, tipo brick |
+| [Relé NC](https://tienda.lega.ar/producto/rele-simple-inversor-5v) | 1 | $1.444,80 | $1.444,80 | Módulo relé 1 canal, 5V bobina, 10A/250V contacto |
+| [Cerradura Magnética](https://tienda.lega.ar/producto/em300-cerradura-electromagnetica) | 1 | $69.786,85 | $69.786,85 ✅ | 12V, tipo ML-1501 o similar, ≤1.5A |
+| [Final de Carrera](https://tienda.lega.ar/producto/mcw1-microswitch-mcw1-22mmx10mm-crueda) | 1 | $1.730,75 | $1.730,75 | NA, microswitch con rodillo |
 | Pedal de Emergencia | 1 | — | — ✅ | Fabricado con pulsador NA (usar existente) |
-| Buzzer piezoeléctrico | 3 | $842,80 | $2.528,40 | Zumbador piezo 3–24V, tipo 2312 |
-| Pulsador NA (interno) | 2 | $466,55 | $933,10 ✅ | Pulsador momentáneo NA, tipo campana |
+| [Buzzer piezoeléctrico](https://tienda.lega.ar/producto/fya20t-piezo-electrico-buzzer-20-mm-75-khz) | 3 | $842,80 | $2.528,40 | Zumbador piezo 3–24V, tipo 2312 |
+| [Pulsador NA (interno)](https://tienda.lega.ar/producto/pls930--pulsador-cuadrado-na) | 2 | $466,55 | $933,10 ✅ | Pulsador momentáneo NA, tipo campana |
 | Pulsador NA (externo) | 2 | — | — ✅ | Pulsador momentáneo NA, estanco IP54 |
 | LED 5mm (externos) | 2 | — | — ✅ | 3.3V, patios y exterior |
 | Tira LED 12V (internos) | 2 | — | — ✅ | RGB o blanco, ~30cm, con resistor serie incorporado |
-| Transistor NPN 2N5551 | 2 | $165,55 | $331,10 | TO-92, 160V/600mA, reemplazo 2N5551 |
-| Resistencia 1kΩ | 2 | $165,55 | $331,10 | 1/4W, carbon film (base 2N5551) |
+| [Transistor NPN 2N5551](https://tienda.lega.ar/producto/2n5551-transistor-npn-160v-600-ma-625mw) | 2 | $165,55 | $331,10 | TO-92, 160V/600mA, reemplazo 2N5551 |
+| [Resistencia 1kΩ](https://tienda.lega.ar/producto/res0251k-resistencia-025-w-1k-ohms) | 2 | $165,55 | $331,10 | 1/4W, carbon film (base 2N5551) |
 | Resistencia 150Ω | 2 | $165,55 | $331,10 | 1/4W, carbon film (LED 3.3V serie) |
 | Resistencia 10kΩ | 1 | $165,55 | $165,55 | 1/4W, carbon film (pull-up GPIO16) |
-| Potenciómetro 10kΩ | 1 | $2.091,95 | $2.091,95 | Lineal, reóstato, 6mm |
-| Cable UTP Cat5 (x 1m) | 1 | $406,35 | $406,35 ✅ | 4 pares, sólido, CCA o cobre |
-| Placa perforada 50×50mm | 1 | $918,05 | $918,05 | 7×5 cm o similar |
-| Cables dupont H-H 40P 20cm | — | $2.648,80 | $2.648,80 ✅ | Varios, 22AWG |
+| [Potenciómetro 10kΩ](https://tienda.lega.ar/producto/pot710k-potenciometro---lineal-mignon-eje-grueso-10k-ohm) | 1 | $2.091,95 | $2.091,95 | Lineal, reóstato, 6mm |
+| [Cable UTP Cat5 (x 1m)](https://tienda.lega.ar/producto/cable-utp-interior-cat5-x-metro-5e100-) | 1 | $406,35 | $406,35 ✅ | 4 pares, sólido, CCA o cobre |
+| [Placa perforada 50×50mm](https://tienda.lega.ar/producto/50x50--plaqueta-simple-faz-50x50-fenolico) | 1 | $918,05 | $918,05 | 7×5 cm o similar |
+| [Cables dupont H-H 40P 20cm](https://tienda.lega.ar/producto/chh20-cable-dupont-hembra-hembra-40p-20-cm-) | — | $2.648,80 | $2.648,80 ✅ | Varios, 22AWG |
 | **Total general** | | | **$117.420,10** | (16 cotizados, todos cubiertos) |
 | **Subtotal a comprar** | | | **$32.538,10** | (excluye ✅) |
 
