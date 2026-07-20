@@ -6,6 +6,48 @@ emergencia físico. Basado en NodeMCU ESP8266 con ESPHome, sin
 dependencia de Home Assistant ni MQTT. Todo el cableado entre zonas
 sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 
+## 1. Resumen de Hardware
+
+| Emoji | Componente | Propósito |
+|-------|-----------|-----------|
+| 🧠 | NodeMCU ESP8266 | Microcontrolador ejecutando ESPHome |
+| ⚡ | Fuente 5V | Alimentación NodeMCU (local en vestíbulo) |
+| ⚡🔒 | Fuente 12V | Alimentación cerradura + LEDs (local en vestíbulo) |
+| 🔒 | Relé | Conmuta 12V de la cerradura (NC = cerrada) |
+| 🔒 | Cerradura Magnética | Mantiene la puerta cerrada mientras recibe 12V |
+| 🔊 | Buzzer Musical (RTTTL) | Zumbador piezoeléctrico — melodía y pitidos. ×3 unidades (salón con pot. volumen serie) |
+| 🔹 | Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
+| 🔸 | Pulsadores Externos (×2) | Patio y exterior — GPIO16 en paralelo |
+| 💡 | LEDs Estado (×4) | 12V internos, 3V externos |
+| 🔹💡 | Transistor NPN BC337 (×2) | Paneles internos — conmutan 12V al LED desde GPIO12 |
+| 🚪 | Final de Carrera (NA) | GPIO13 — detecta puerta abierta/cerrada |
+| 🚫 | Pedal de Emergencia | Corte físico NC en serie con 12V de la cerradura |
+
+## 2. Lista de Materiales
+
+| # | Componente | Cant. | Especificación | Ubicación |
+|---|-----------|:-----:|----------------|-----------|
+| 1 | NodeMCU ESP8266 | 1 | ESP-12E, CP2102, microUSB | Vestíbulo |
+| 2 | Fuente 5V | 1 | 5V DC, ≥1A, tipo cargador USB | Vestíbulo |
+| 3 | Fuente 12V | 1 | 12V DC, ≥2A, tipo brick | Vestíbulo |
+| 4 | Relé NC | 1 | Módulo relé 1 canal, 5V bobina, 10A/250V contacto | Vestíbulo |
+| 5 | Cerradura Magnética | 1 | 12V, tipo ML-1501 o similar, ≤1.5A | Patio |
+| 6 | Final de Carrera | 1 | NA (normalmente abierto), tipo microswitch con rodillo | Patio |
+| 7 | Pedal de Emergencia | 1 | NC (normalmente cerrado), tipo pedal metálico o interruptor de pie | Patio |
+| 8 | Buzzer piezoeléctrico | 3 | Zumbador piezo sin oscilador, 3–24V, tipo 2312 o similar | Salón / Vest. / Patio |
+| 9 | Pulsador NA (interno) | 2 | Pulsador momentáneo NA, tipo campana o táctil | Salón / Vestíbulo |
+| 10 | Pulsador NA (externo) | 2 | Pulsador momentáneo NA, tipo timbre estanco IP54 | Patio / Exterior |
+| 11 | LED 5mm | 4 | Color a elección, 12V internos, 3.3V externos | 1 por panel |
+| 12 | Transistor NPN BC337 | 2 | TO-92, 45V/800mA | Salón / Vestíbulo |
+| 13 | Resistencia 1kΩ | 2 | 1/4W, carbon film | Salón / Vestíbulo (base BC337) |
+| 14 | Resistencia 470Ω | 2 | 1/4W, carbon film | Salón / Vestíbulo (LED 12V colector) |
+| 15 | Resistencia 150Ω | 2 | 1/4W, carbon film | Patio / Exterior (LED 3.3V serie) |
+| 16 | Resistencia 10kΩ | 1 | 1/4W, carbon film | Vestíbulo (pull-up GPIO16) |
+| 17 | Potenciómetro 10kΩ | 1 | Lineal, tipo reóstato, 6mm, ejey 15mm | Salón (volumen buzzer) |
+| 18 | Cable UTP Cat5 | 1 | 4 pares, sólido, CCA o cobre, largo según distancia | Entre todas las zonas |
+| 19 | Placa perforada / protoboard | 1 | 7×5 cm o similar | Vestíbulo (montaje MCU) |
+| 20 | Cables dupont / manguera | — | Varios, 22AWG | Conexiones locales en cada panel |
+
 ## Distribución Física
 
 ```mermaid
@@ -58,24 +100,7 @@ flowchart TB
 - Relé NC en vestíbulo conmuta 12V desde par 4 MR hacia par 2 V → cerradura en patio
 - Cada panel solo pela los pares que necesita (ej. exterior solo pares 1, 3 AZ, 4 — sin BL/AZ)
 
-## 1. Resumen de Hardware
-
-| Emoji | Componente | Propósito |
-|-------|-----------|-----------|
-| 🧠 | NodeMCU ESP8266 | Microcontrolador ejecutando ESPHome |
-| ⚡ | Fuente 5V | Alimentación NodeMCU (local en vestíbulo) |
-| ⚡🔒 | Fuente 12V | Alimentación cerradura + LEDs (local en vestíbulo) |
-| 🔒 | Relé | Conmuta 12V de la cerradura (NC = cerrada) |
-| 🔒 | Cerradura Magnética | Mantiene la puerta cerrada mientras recibe 12V |
-| 🔊 | Buzzer Musical (RTTTL) | Zumbador piezoeléctrico — melodía y pitidos. ×3 unidades (salón con pot. volumen serie) |
-| 🔹 | Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
-| 🔸 | Pulsadores Externos (×2) | Patio y exterior — GPIO16 en paralelo |
-| 💡 | LEDs Estado (×4) | 12V internos, 3V externos |
-| 🔹💡 | Transistor NPN BC337 (×2) | Paneles internos — conmutan 12V al LED desde GPIO12 |
-| 🚪 | Final de Carrera (NA) | GPIO13 — detecta puerta abierta/cerrada |
-| 🚫 | Pedal de Emergencia | Corte físico NC en serie con 12V de la cerradura |
-
-## 2. Asignación de Pines
+## 3. Asignación de Pines
 
 | GPIO | Emoji | Componente | Tipo |
 |------|-------|-----------|------|
@@ -86,32 +111,32 @@ flowchart TB
 | GPIO5 | 🔒 | Relé de Cerradura (NC → lock, NA → libre) | Salida (relé) |
 | GPIO13 | 🚪 | Final de Carrera + detección emergencia | Entrada (pull-up, NA) |
 
-## 3. Definición de Componentes
+## 4. Definición de Componentes
 
-### 3.1 Pulsadores Internos (panel de control)
+### 4.1 Pulsadores Internos (panel de control)
 - **Pin**: GPIO4, `INPUT_PULLUP`, invertido. Paralelo salón + vestíbulo.
 - **Pulsación corta** (< 4s): ejecuta `internal_press` (solo en ACTIVADO)
 - **Pulsación larga** (> 4s): si sistema DESACTIVADO → `enable_system`
 - **Pulsación muy larga** (> 8s): si sistema ACTIVADO → `disable_system`
 
-### 3.2 Pulsadores Externos (panel de timbre)
+### 4.2 Pulsadores Externos (panel de timbre)
 - **Pin**: GPIO16, `INPUT` con pull-up ext. 10kΩ. Paralelo patio + exterior.
 - **Pulsación corta** (< 4s): ejecuta `external_press` (solo timbre, NO desbloquea)
 - Pulsaciones largas ignoradas (solo el panel de control interno tiene función de mantenimiento)
 
-### 3.3 Relé
+### 4.3 Relé
 - GPIO5. **ID**: `lock_relay`
 - **OFF** → NC cerrado → cerradura recibe 12V → puerta cerrada
 - **ON** → NC abierto → cerradura pierde 12V → puerta desbloqueada
 - NA no se usa
 
-### 3.4 Final de Carrera
+### 4.4 Final de Carrera
 - GPIO13. INPUT_PULLUP. NA a GND.
 - **ON**: puerta abierta. **OFF**: puerta cerrada.
 - Si se activa con relé OFF → apertura por emergencia
 - **Al cerrar la puerta** (FC → OFF): si el LED está en flash lento (estado puerta abierta), vuelve a 25% reposo. No afecta al cooldown externo.
 
-### 3.5 Buzzer Musical (RTTTL)
+### 4.5 Buzzer Musical (RTTTL)
 - GPIO14 (PWM). Por par 3 BL/AZ a los paneles de salón, vestíbulo y patio (el exterior no lleva buzzer).
 - El panel de salón lleva un potenciómetro en serie (reóstato, 10kΩ lineal) para ajuste local de volumen:
 ```
@@ -132,7 +157,7 @@ Todos los sonidos del sistema usan RTTTL (definidos en `melodies.h`):
 - Durante el desbloqueo suena el sonido RTTTL de apertura, no melodía.
 - La alarma de emergencia usa RTTTL.
 
-### 3.6 LEDs Estado
+### 4.6 LEDs Estado
 - GPIO12 PWM → UTP par 3 AZ. Señal común a las 4 zonas.
 - Cada panel tiene su propia conversión local:
 
@@ -155,7 +180,7 @@ UTP par 3 AZ ──┤150Ω├─── LED ─── UTP par 4 BL/MR (GND)
   - *Flash rápido*: 200ms ON / 200ms OFF
   - *Flash lento*: duración configurable (`gate_open_flash_interval`), acompañado de pitido corto
 
-## 4. Estado del Sistema
+## 5. Estado del Sistema
 
 El sistema tiene dos estados:
 
@@ -169,7 +194,7 @@ Transiciones:
 - DESACTIVADO + pulsación interna >4s → ACTIVADO
 - ACTIVADO + pulsación interna >8s → DESACTIVADO
 
-## 5. Detección de Emergencia
+## 6. Detección de Emergencia
 
 ```
 Al recibir final carrera = ON:
@@ -183,7 +208,7 @@ El flag `desbloqueo_normal_activo` se pone a true al iniciar `unlock_gate`
 y se limpia al terminar. Así un FC ON que llegue justo después de apagar
 el relé no se confunde con emergencia.
 
-## 6. Comportamiento
+## 7. Comportamiento
 
 | Evento | 🔒 Relé | 🔊 Buzzer | 💡 LED |
 |--------|:------:|:--------:|:-----:|
@@ -203,9 +228,9 @@ Los pulsadores externos **nunca desbloquean** la puerta — solo tocan el timbre
 El cooldown del pulsador externo es independiente del interno (cada uno con su bandera).
 Al cerrar la puerta (FC→OFF) el LED vuelve a 25% si estaba en flash lento.
 
-## 7. Scripts
+## 8. Scripts
 
-### 7.1 `external_press` (patio / exterior — timbre)
+### 8.1 `external_press` (patio / exterior — timbre)
 ```
 1. Si sistema DESACTIVADO → salir
 2. Si cooldown_externo_activo → salir (ignorar)
@@ -227,7 +252,7 @@ Si transcurren 60s sin una nueva pulsación externa, el timer resetea
 el índice de melodía a 0. Si ocurre una nueva pulsación antes, el
 timer se cancela (paso 4) y se reinicia al final del cooldown (paso 11).
 
-### 7.2 `internal_press` (salón / vestíbulo — abrir puerta)
+### 8.2 `internal_press` (salón / vestíbulo — abrir puerta)
 ```
 1. Si sistema DESACTIVADO → salir
 2. LED → Flash rápido
@@ -241,7 +266,7 @@ timer se cancela (paso 4) y se reinicia al final del cooldown (paso 11).
 El interno no reproduce melodía, no avanza el índice de melodía,
 y no comparte cooldown con el externo — son independientes.
 
-### 7.3 `unlock_gate`
+### 8.3 `unlock_gate`
 ```
 1. desbloqueo_normal_activo = true
 2. Relé → ON. Detener RTTTL anterior.
@@ -259,7 +284,7 @@ y no comparte cooldown con el externo — son independientes.
 > luego flash lento o reposo según FC). Durante el desbloqueo el LED sigue el ritmo
 > de la melodía APERTURA.
 
-### 7.4 `flash_and_beep`
+### 8.4 `flash_and_beep`
 Reproduce el sonido de **apertura** (RTTTL) en bucle durante el desbloqueo:
 
 ```
@@ -271,7 +296,7 @@ se active el final de carrera o expire `unlock_duration`. El LED parpadea
 sincronizado: 67ms ON (nota) / 67ms OFF (silencio). Tras el desbloqueo,
 el LED vuelve a 25% y `internal_press` gestiona el estado final.
 
-### 7.5 `enable_system`
+### 8.5 `enable_system`
 ```
 1. Sistema → ACTIVADO
 2. Reproducir secuencia ascendente (RTTTL ACTIVAR)
@@ -280,7 +305,7 @@ el LED vuelve a 25% y `internal_press` gestiona el estado final.
 4. Relé → OFF (cerradura bloqueada)
 ```
 
-### 7.6 `disable_system`
+### 8.6 `disable_system`
 ```
 1. Sistema → DESACTIVADO
 2. Reproducir secuencia descendente (RTTTL DESACTIVAR)
@@ -289,7 +314,7 @@ el LED vuelve a 25% y `internal_press` gestiona el estado final.
 4. Relé → ON permanentemente (cerradura desbloqueada)
 ```
 
-### 7.7 `emergency_alert`
+### 8.7 `emergency_alert`
 ```
 1. Alarma de emergencia (RTTTL): se repite en bucle hasta 60s
    d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p  (~4.8s cada ciclo)
@@ -302,7 +327,7 @@ el LED vuelve a 25% y `internal_press` gestiona el estado final.
    Si no → LED → 25% (reposo), silencio
 ```
 
-## 8. Comunicación
+## 9. Comunicación
 
 | Método | Propósito |
 |--------|-----------|
@@ -312,7 +337,7 @@ el LED vuelve a 25% y `internal_press` gestiona el estado final.
 
 Sin HA, API nativa ni MQTT.
 
-## 9. Parámetros
+## 10. Parámetros
 
 | Parámetro | Default | Configurable | Descripción |
 |-----------|---------|-------------|-------------|
@@ -321,7 +346,7 @@ Sin HA, API nativa ni MQTT.
 | `gate_open_flash_interval` | 5s | Web (1–30s) | Intervalo de flasheo del LED cuando puerta está abierta |
 | `melody_reset_timeout` | 60s | No | Tiempo sin pulsaciones externas tras el cooldown que resetea el índice de melodía a 0 |
 
-## 10. Repertorio de Melodías (RTTTL)
+## 11. Repertorio de Melodías (RTTTL)
 
 4 melodías en formato RTTTL. Cada pulsación del timbre externo
 reproduce la siguiente. Al llegar a la cuarta vuelve a la primera.
@@ -342,9 +367,9 @@ desbloqueo interno si la puerta sigue abierta (FC=ON).
 
 Las cadenas se definen en `melodies.h` como `static const char[] PROGMEM` para ahorrar RAM en el ESP8266.
 
-## 11. Diagramas
+## 12. Diagramas
 
-### 11.1 Máquina de estados del sistema
+### 12.1 Máquina de estados del sistema
 
 ```mermaid
 stateDiagram-v2
@@ -368,7 +393,7 @@ stateDiagram-v2
     }
 ```
 
-### 11.2 Diagrama general de conexiones (Vestíbulo)
+### 12.2 Diagrama general de conexiones (Vestíbulo)
 
 ```mermaid
 flowchart LR
@@ -411,7 +436,7 @@ flowchart LR
     P4 --> Salon & Patio & Ext
 ```
 
-### 11.3 Circuito — Panel Interno (salón / vestíbulo)
+### 12.3 Circuito — Panel Interno (salón / vestíbulo)
 
 ```mermaid
 flowchart LR
@@ -449,7 +474,7 @@ flowchart LR
 > **Panel de vestíbulo**: el buzzer se conecta directamente entre BL/AZ y GND (sin pot).
 > Ambos paneles comparten el mismo circuito de LED (BC337 + 12V).
 
-### 11.4 Circuito — Panel Externo (patio)
+### 12.4 Circuito — Panel Externo (patio)
 
 ```mermaid
 flowchart LR
@@ -474,7 +499,7 @@ flowchart LR
 
 > El panel **exterior** es idéntico pero **sin el buzzer** — no conecta el hilo BL/AZ del par 3. Solo lleva pulsador (par 1 NA), LED (par 3 AZ) y alimentación (par 4).
 > El pull-up de 10kΩ a 3.3V para GPIO16 está en el **vestíbulo**, junto al MCU.
-### 11.5 Circuito — Cerradura + Pedal de Emergencia
+### 12.5 Circuito — Cerradura + Pedal de Emergencia
 
 ```mermaid
 flowchart LR
@@ -505,7 +530,7 @@ Flujo: `+12V → Par 4 MR → Relé COM → NC → Par 2 V → Pedal NC → Cerr
 | Cerrado (OFF) | Abierto | ⬛ 0V → apertura emergencia |
 | Abierto (ON) | — | ⬛ 0V → desbloqueo normal |
 
-### 11.6 Pull-up de pulsador externo (GPIO16)
+### 12.6 Pull-up de pulsador externo (GPIO16)
 
 El pull-up de 10kΩ para GPIO16 está en el **vestíbulo**, junto al MCU. No en los paneles remotos.
 
@@ -521,7 +546,7 @@ flowchart LR
     end
 ```
 
-### 11.7 Swimlane — `external_press`
+### 12.7 Swimlane — `external_press`
 
 ```mermaid
 flowchart TD
@@ -558,7 +583,7 @@ flowchart TD
     style FIN_EXT fill:#f9f,stroke:#333
 ```
 
-### 11.8 Swimlane — `internal_press`
+### 12.8 Swimlane — `internal_press`
 
 ```mermaid
 flowchart TD
@@ -600,7 +625,7 @@ flowchart TD
     FC --> LED2
 ```
 
-### 11.9 Swimlane — `unlock_gate`
+### 12.9 Swimlane — `unlock_gate`
 
 ```mermaid
 flowchart TD
@@ -641,7 +666,7 @@ flowchart TD
     STOP --> SILENCIO
 ```
 
-### 11.10 Swimlane — Detección de emergencia
+### 12.10 Swimlane — Detección de emergencia
 
 ```mermaid
 flowchart TD
@@ -669,7 +694,7 @@ flowchart TD
     SILENT --> FIN
 ```
 
-## 12. Archivos
+## 13. Archivos
 
 ```
 esphome-gate/
@@ -679,27 +704,3 @@ esphome-gate/
 └── secrets.yaml           # Credenciales WiFi (editar antes de compilar)
 ```
 
-## 13. Lista de Materiales
-
-| # | Componente | Cant. | Especificación | Ubicación |
-|---|-----------|:-----:|----------------|-----------|
-| 1 | NodeMCU ESP8266 | 1 | ESP-12E, CP2102, microUSB | Vestíbulo |
-| 2 | Fuente 5V | 1 | 5V DC, ≥1A, tipo cargador USB | Vestíbulo |
-| 3 | Fuente 12V | 1 | 12V DC, ≥2A, tipo brick | Vestíbulo |
-| 4 | Relé NC | 1 | Módulo relé 1 canal, 5V bobina, 10A/250V contacto | Vestíbulo |
-| 5 | Cerradura Magnética | 1 | 12V, tipo ML-1501 o similar, ≤1.5A | Patio |
-| 6 | Final de Carrera | 1 | NA (normalmente abierto), tipo microswitch con rodillo | Patio |
-| 7 | Pedal de Emergencia | 1 | NC (normalmente cerrado), tipo pedal metálico o interruptor de pie | Patio |
-| 8 | Buzzer piezoeléctrico | 3 | Zumbador piezo sin oscilador, 3–24V, tipo 2312 o similar | Salón / Vest. / Patio |
-| 9 | Pulsador NA (interno) | 2 | Pulsador momentáneo NA, tipo campana o táctil | Salón / Vestíbulo |
-| 10 | Pulsador NA (externo) | 2 | Pulsador momentáneo NA, tipo timbre estanco IP54 | Patio / Exterior |
-| 11 | LED 5mm | 4 | Color a elección, 12V internos, 3.3V externos | 1 por panel |
-| 12 | Transistor NPN BC337 | 2 | TO-92, 45V/800mA | Salón / Vestíbulo |
-| 13 | Resistencia 1kΩ | 2 | 1/4W, carbon film | Salón / Vestíbulo (base BC337) |
-| 14 | Resistencia 470Ω | 2 | 1/4W, carbon film | Salón / Vestíbulo (LED 12V colector) |
-| 15 | Resistencia 150Ω | 2 | 1/4W, carbon film | Patio / Exterior (LED 3.3V serie) |
-| 16 | Resistencia 10kΩ | 1 | 1/4W, carbon film | Vestíbulo (pull-up GPIO16) |
-| 17 | Potenciómetro 10kΩ | 1 | Lineal, tipo reóstato, 6mm, ejey 15mm | Salón (volumen buzzer) |
-| 18 | Cable UTP Cat5 | 1 | 4 pares, sólido, CCA o cobre, largo según distancia | Entre todas las zonas |
-| 19 | Placa perforada / protoboard | 1 | 7×5 cm o similar | Vestíbulo (montaje MCU) |
-| 20 | Cables dupont / manguera | — | Varios, 22AWG | Conexiones locales en cada panel |
