@@ -34,21 +34,21 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | [Cerradura Magnética](https://tienda.lega.ar/producto/em300-cerradura-electromagnetica) | 1 | $69.786,85 | $69.786,85 ✅ | 12V, tipo ML-1501 o similar, ≤1.5A |
 | [Final de Carrera](https://tienda.lega.ar/producto/mcw1-microswitch-mcw1-22mmx10mm-crueda) | 1 | $1.730,75 | $1.730,75 | NA, microswitch con rodillo |
 | Pedal de Emergencia | 1 | — | — ✅ | Fabricado con pulsador NA (usar existente) |
-| [Buzzer piezoeléctrico](https://tienda.lega.ar/producto/buz3-buzzer-miniatura-3v) | 3 | $842,80 | $2.528,40 | Zumbador piezo 3–24V, tipo 2312 |
+| [Buzzer 12V miniatura](https://tienda.lega.ar/producto/buz12-buzzer-miniatura-12v) | 3 | $1.143,80 | $3.431,40 | Buzzer piezoeléctrico 12V, 20mm |
 | [Pulsador NA (interno)](https://tienda.lega.ar/producto/pls930--pulsador-cuadrado-na) | 2 | $466,55 | $933,10 ✅ | Pulsador momentáneo NA, tipo campana |
 | [Pulsador NA (externo)](https://tienda.lega.ar/producto/pfpsz-pulsador-frente-portero-l-nueva) | 2 | $6.742,40 | $6.742,40 ✅ | Pulsador momentáneo NA, estanco IP54 |
 | LED 5mm (externos) | 2 | — | — ✅ | 3.3V, patios y exterior |
 | Tira LED 12V (internos) | 2 | — | — ✅ | RGB o blanco, ~30cm, con resistor serie incorporado |
-| [Transistor NPN 2N5551](https://tienda.lega.ar/producto/2n5551-transistor-npn-160v-600-ma-625mw) | 2 | $165,55 | $331,10 | TO-92, 160V/600mA, reemplazo 2N5551 |
-| [Resistencia 1kΩ](https://tienda.lega.ar/producto/res0251k-resistencia-025-w-1k-ohms) | 2 | $165,55 | $331,10 | 1/4W, carbon film (base 2N5551) |
+| [Transistor NPN 2N5551](https://tienda.lega.ar/producto/2n5551-transistor-npn-160v-600-ma-625mw) | 5 | $165,55 | $827,75 | TO-92, 160V/600mA (2 LED + 3 buzzer) |
+| [Resistencia 1kΩ](https://tienda.lega.ar/producto/res0251k-resistencia-025-w-1k-ohms) | 5 | $165,55 | $827,75 | 1/4W, carbon film (base 2N5551) |
 | Resistencia 150Ω | 2 | $165,55 | $331,10 | 1/4W, carbon film (LED 3.3V serie) |
 | Resistencia 10kΩ | 1 | $165,55 | $165,55 | 1/4W, carbon film (pull-up GPIO16) |
 | [Potenciómetro 10kΩ](https://tienda.lega.ar/producto/pot710k-potenciometro---lineal-mignon-eje-grueso-10k-ohm) | 1 | $2.091,95 | $2.091,95 | Lineal, reóstato, 6mm |
 | [Cable UTP Cat5 (x 1m)](https://tienda.lega.ar/producto/cable-utp-interior-cat5-x-metro-5e100-) | 1 | $406,35 | $406,35 ✅ | 4 pares, sólido, CCA o cobre |
 | [Placa perforada 50×50mm](https://tienda.lega.ar/producto/50x50--plaqueta-simple-faz-50x50-fenolico) | 1 | $918,05 | $918,05 | 7×5 cm o similar |
 | [Cables dupont H-H 40P 20cm](https://tienda.lega.ar/producto/chh20-cable-dupont-hembra-hembra-40p-20-cm-) | — | $2.648,80 | $2.648,80 ✅ | Varios, 22AWG |
-| **Total general** | | | **$117.420,10** | (16 cotizados, todos cubiertos) |
-| **Subtotal a comprar** | | | **$32.538,10** | (excluye ✅) |
+| **Total general** | | | **$119.316,40** | (19 cotizados, todos cubiertos) |
+| **Subtotal a comprar** | | | **$34.434,40** | (excluye ✅) |
 
 ## Distribución Física
 
@@ -96,7 +96,7 @@ flowchart LR
 | 4 | MR | **12V siempre vivo** | ⚡ | Todas | Power |
 
 - Par 1 = botones, par 2 = patio (FC + cerradura), par 3 = audio (BL/AZ) + broadcast LED (AZ), par 4 = alimentación
-- Los paneles de salón, vestíbulo y patio llevan buzzer (GPIO14 por par 3 BL/AZ). El de salón adicionalmente tiene un potenciómetro de 10kΩ en serie (reóstato) para ajuste local de volumen. El exterior no lleva buzzer.
+- Los paneles de salón, vestíbulo y patio llevan buzzer (GPIO14 por par 3 BL/AZ → 2N5551 → BUZ12 12V). El de salón adicionalmente tiene un potenciómetro de 10kΩ como divisor en la base del 2N5551 para ajuste local de volumen. El exterior no lleva buzzer.
 - 12V viaja por par 4 MR junto con GND (par 4 BL/MR) — mejor para la fuente
 - Relé NC en vestíbulo conmuta 12V desde par 4 MR hacia par 2 V → cerradura en patio
 - Cada panel solo pela los pares que necesita (ej. exterior solo pares 1, 3 AZ, 4 — sin BL/AZ)
@@ -138,14 +138,16 @@ flowchart LR
 - **Al cerrar la puerta** (FC → OFF): si el LED está en flash lento (estado puerta abierta), vuelve a 25% reposo. No afecta al cooldown externo.
 
 ### 4.5 Buzzer Musical (RTTTL)
-- GPIO14 (PWM). Por par 3 BL/AZ a los paneles de salón, vestíbulo y patio (el exterior no lleva buzzer).
-- El panel de salón lleva un potenciómetro en serie (reóstato, 10kΩ lineal) para ajuste local de volumen:
+- GPIO14 (PWM) → 1kΩ → 2N5551 base. El transistor conmuta 12V (Par 4 MR) hacia Par 3 BL/AZ.
+- Los paneles de salón, vestíbulo y patio tienen su propio 2N5551 local que recibe la señal de BL/AZ y conmuta 12V al BUZ12 (el exterior no lleva buzzer).
+- En cada panel, entre 12V y el buzzer hay un placeholder para resistencia de atenuación (0Ω = cable directo por ahora):
 ```
-Salón:    BL/AZ ── pot 10kΩ ── buzzer (+) ── (-) ── GND
-Vestíbulo: BL/AZ ────────────── buzzer (+) ── (-) ── GND
-Patio:    BL/AZ ────────────── buzzer (+) ── (-) ── GND
-Exterior:  (sin conexión BL/AZ)
+                 ┌─── R_atenuación (0Ω placeholder) ─── BUZ12(+) ── BUZ12(−)
+Par 3 BL/AZ ──┤1kΩ├── base 2N5551                   └─── colector 2N5551
+                                                emisor 2N5551 ── GND
 ```
+- El panel de salón adicionalmente tiene un potenciómetro de 10kΩ en serie entre BL/AZ y la base del 2N5551 (divisor de tensión) para ajuste local de volumen.
+- Si a futuro el volumen es muy intenso, se reemplaza el cable por una resistencia (ej. 470Ω) en cada panel.
 
 Todos los sonidos del sistema usan RTTTL (definidos en `melodies.h`):
   - `ALL_MELODIES[]`: 4 melodías de timbre
@@ -450,7 +452,7 @@ flowchart LR
         P1BL["🔹 Par 1 BL<br/>GPIO4"]
     end
 
-    subgraph LedDriver["💡 Tira LED (paneles internos)"]
+    subgraph LedDriver["💡 Tira LED (ambos paneles)"]
         R1[1kΩ] --> B[2N5551 Base]
         AZ --> R1
         B --> C[2N5551 Colector]
@@ -459,19 +461,25 @@ flowchart LR
     end
 
     subgraph BuzzerSalon["🔊 Salón (con pot)"]
-        BLAZ --> POT["Pot 10kΩ<br/>reóstato"] --> BZ_SALON["Buzzer +"] --> BZ_SALON_GND["Buzzer −"] --> GND
+        BLAZ --> POT["Pot 10kΩ<br/>reóstato"] --> RB[1kΩ] --> BB[2N5551 Base]
+        P4MR --> R0A["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12["BUZ12 +"]
+        BB --> CB[2N5551 Colector] --> BZ12
+        EB[2N5551 Emisor] --> GND
     end
 
     subgraph BuzzerVest["🔊 Vestíbulo (directo)"]
-        BLAZ --> BZ_VEST["Buzzer +"] --> BZ_VEST_GND["Buzzer −"] --> GND
+        BLAZ --> RBV[1kΩ] --> BBV[2N5551 Base]
+        P4MR --> R0V["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12V["BUZ12 +"]
+        BBV --> CBV[2N5551 Colector] --> BZ12V
+        EBV[2N5551 Emisor] --> GND
     end
 
     P1BL --> BtnInt["🔹 Pulsador Int<br/>NA → GND"]
     BtnInt --> GND
 ```
 
-> **Panel de salón**: el buzzer lleva potenciómetro de 10kΩ en serie (reóstato) entre BL/AZ y el buzzer (+).
-> **Panel de vestíbulo**: el buzzer se conecta directamente entre BL/AZ y GND (sin pot).
+> **Panel de salón**: el buzzer lleva potenciómetro de 10kΩ entre BL/AZ y la base del 2N5551 como divisor de volumen. Entre 12V y el BUZ12 hay un placeholder para resistencia de atenuación futura (0Ω = cable directo).
+> **Panel de vestíbulo**: sin potenciómetro, el 1kΩ va directo de BL/AZ a la base.
 > Ambos paneles comparten el mismo circuito de LED (2N5551 + tira LED 12V).
 
 ### 12.4 Circuito — Panel Externo (patio)
@@ -482,6 +490,7 @@ flowchart LR
         NA["🔸 Par 1 NA<br/>GPIO16"]
         AZ["💡 Par 3 AZ<br/>GPIO12 PWM"]
         BLAZ["🔊 Par 3 BL/AZ<br/>GPIO14 Buzzer"]
+        P4MR["⚡ Par 4 MR<br/>+12V"]
         GND["⬛ Par 4 BL/MR<br/>GND"]
     end
 
@@ -492,8 +501,12 @@ flowchart LR
         AZ --> R150[150Ω] --> LED3["💡 LED 3V"]
         LED3 --> GND
 
-        BLAZ --> Buz["🔊 Buzzer Piezo"]
-        Buz --> GND
+        subgraph BuzzerPatio["🔊 Patio"]
+            BLAZ --> RB[1kΩ] --> BB[2N5551 Base]
+            P4MR --> R0["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12["BUZ12 +"]
+            BB --> CB[2N5551 Colector] --> BZ12
+            EB[2N5551 Emisor] --> GND
+        end
     end
 ```
 
