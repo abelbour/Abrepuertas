@@ -18,8 +18,8 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | 🔊 | Buzzer Musical (RTTTL) | Zumbador piezoeléctrico — melodía y pitidos. ×3 unidades (salón con pot. volumen serie) |
 | 🔹 | Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
 | 🔸 | Pulsadores Externos (×2) | Patio y exterior — GPIO16 en paralelo |
-| 💡 | LEDs Estado (×4) | 12V internos, 3V externos |
-| 🔹💡 | Transistor NPN 2N5551 (×2) | Paneles internos — conmutan 12V al LED desde GPIO12 |
+| 💡 | LEDs Estado | Tiras LED 12V internas (salón, vestíbulo) + LED 3V externos (patio, exterior) |
+| 🔹💡 | Transistor NPN 2N5551 (×2) | Paneles internos — conmutan 12V a tira LED desde GPIO12 |
 | 🚪 | Final de Carrera (NA) | GPIO13 — detecta puerta abierta/cerrada |
 | 🚫 | Pedal de Emergencia | Corte físico NC en serie con 12V de la cerradura |
 
@@ -37,18 +37,18 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | Buzzer piezoeléctrico | 3 | $842,80 | $2.528,40 | Zumbador piezo 3–24V, tipo 2312 |
 | Pulsador NA (interno) | 2 | $466,55 | $933,10 ✅ | Pulsador momentáneo NA, tipo campana |
 | Pulsador NA (externo) | 2 | — | — ✅ | Pulsador momentáneo NA, estanco IP54 |
-| LED 5mm | 4 | — | — ✅ | Color a elección, 12V internos / 3.3V externos |
+| LED 5mm (externos) | 2 | — | — ✅ | 3.3V, patios y exterior |
+| Tira LED 12V (internos) | 2 | — | — ✅ | RGB o blanco, ~30cm, con resistor serie incorporado |
 | Transistor NPN 2N5551 | 2 | $165,55 | $331,10 | TO-92, 160V/600mA, reemplazo 2N5551 |
 | Resistencia 1kΩ | 2 | $165,55 | $331,10 | 1/4W, carbon film (base 2N5551) |
-| Resistencia 470Ω | 2 | $165,55 | $331,10 | 1/4W, carbon film (LED 12V colector) |
 | Resistencia 150Ω | 2 | $165,55 | $331,10 | 1/4W, carbon film (LED 3.3V serie) |
 | Resistencia 10kΩ | 1 | $165,55 | $165,55 | 1/4W, carbon film (pull-up GPIO16) |
 | Potenciómetro 10kΩ | 1 | $2.091,95 | $2.091,95 | Lineal, reóstato, 6mm |
 | Cable UTP Cat5 (x 1m) | 1 | $406,35 | $406,35 ✅ | 4 pares, sólido, CCA o cobre |
 | Placa perforada 50×50mm | 1 | $918,05 | $918,05 | 7×5 cm o similar |
 | Cables dupont H-H 40P 20cm | — | $2.648,80 | $2.648,80 ✅ | Varios, 22AWG |
-| **Total general** | | | **$117.751,20** | (17 cotizados, todos cubiertos) |
-| **Subtotal a comprar** | | | **$32.869,20** | (excluye ✅) |
+| **Total general** | | | **$117.420,10** | (16 cotizados, todos cubiertos) |
+| **Subtotal a comprar** | | | **$32.538,10** | (excluye ✅) |
 
 ## Distribución Física
 
@@ -162,12 +162,13 @@ Todos los sonidos del sistema usan RTTTL (definidos en `melodies.h`):
 - GPIO12 PWM → UTP par 3 AZ. Señal común a las 4 zonas.
 - Cada panel tiene su propia conversión local:
 
-**Paneles internos (salón, vestíbulo)** — LED 12V transistorizado:
+**Paneles internos (salón, vestíbulo)** — Tira LED 12V transistorizada:
 ```
 UTP par 3 AZ ──┤1kΩ├── base 2N5551
-UTP par 4 MR (12V) ──┤ resistor LED├── colector
+UTP par 4 MR (12V) ── tira LED (+) ── tira LED (−) ── colector
 UTP par 4 BL/MR (GND) ── emisor
 ```
+(La tira LED incluye resistor limitador serie incorporado.)
 
 **Paneles externos (patio, exterior)** — LED directo:
 ```
@@ -449,14 +450,12 @@ flowchart LR
         P1BL["🔹 Par 1 BL<br/>GPIO4"]
     end
 
-    subgraph LedDriver["💡 LED (ambos paneles)"]
+    subgraph LedDriver["💡 Tira LED (paneles internos)"]
         R1[1kΩ] --> B[2N5551 Base]
         AZ --> R1
         B --> C[2N5551 Colector]
-        P4MR --> R2[470Ω] --> C
+        P4MR --> STRIP["Tira LED 12V"] --> C
         E[2N5551 Emisor] --> GND
-        C --> LED12["💡 LED 12V"]
-        LED12 --> GND
     end
 
     subgraph BuzzerSalon["🔊 Salón (con pot)"]
@@ -473,7 +472,7 @@ flowchart LR
 
 > **Panel de salón**: el buzzer lleva potenciómetro de 10kΩ en serie (reóstato) entre BL/AZ y el buzzer (+).
 > **Panel de vestíbulo**: el buzzer se conecta directamente entre BL/AZ y GND (sin pot).
-> Ambos paneles comparten el mismo circuito de LED (2N5551 + 12V).
+> Ambos paneles comparten el mismo circuito de LED (2N5551 + tira LED 12V).
 
 ### 12.4 Circuito — Panel Externo (patio)
 
