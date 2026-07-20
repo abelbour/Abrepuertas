@@ -112,10 +112,12 @@ flowchart TB
 
 ### 3.5 Buzzer Musical (RTTTL)
 - GPIO14 (PWM). Paralelo a todas las zonas.
-- Soporta dos modos:
-  - **RTTTL**: melodías de timbre (4 programables por el usuario en `melodies.h`)
-  - **RTTTL**: sonido de apertura (constante `APERTURA` en `melodies.h`)
-  - **RTTTL**: alarma de emergencia (constante `EMERGENCIA` en `melodies.h`)
+- Todos los sonidos del sistema usan RTTTL (definidos en `melodies.h`):
+  - `ALL_MELODIES[]`: 4 melodías de timbre
+  - `APERTURA`: sonido de desbloqueo
+  - `EMERGENCIA`: alarma de emergencia
+  - `ACTIVAR` / `DESACTIVAR`: activación/desactivación del sistema
+  - `BEEP_FLASH`: pitido corto del flash de puerta abierta
 - Cada pulsación del timbre (externo) reproduce la siguiente melodía RTTTL en secuencia.
 - Al terminar el cooldown del desbloqueo interno (doorbell_led_duration), si la puerta sigue abierta (FC=ON), el índice se resetea a la melodía 1.
 - Durante el desbloqueo suena el sonido RTTTL de apertura, no melodía.
@@ -259,7 +261,8 @@ estado final del LED.
 ### 7.5 `enable_system`
 ```
 1. Sistema → ACTIVADO
-2. Reproducir secuencia ascendente (3 notas cortas)
+2. Reproducir secuencia ascendente (RTTTL ACTIVAR)
+   d=8,o=5,b=200:8c,8e,8g,8c6,8e6,8d6,8c6,4g
 3. LED: 3 flashes rápidos → 25% (reposo)
 4. Relé → OFF (cerradura bloqueada)
 ```
@@ -267,7 +270,8 @@ estado final del LED.
 ### 7.6 `disable_system`
 ```
 1. Sistema → DESACTIVADO
-2. Reproducir secuencia descendente (3 notas largas)
+2. Reproducir secuencia descendente (RTTTL DESACTIVAR)
+   d=8,o=5,b=200:8c6,8g,8e,8c,8a4,8g,8e,4c
 3. LED: 3 flashes lentos → OFF
 4. Relé → ON permanentemente (cerradura desbloqueada)
 ```
@@ -319,6 +323,9 @@ desbloqueo interno si la puerta sigue abierta (FC=ON).
 | 4 | `d=4,o=4,b=100:a,b,c7,g,f,e,g,4d,16d,16p,c,2c,p` |
 | Apertura | `d=16,o=7,b=225:c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c`|
 | Emergencia | `d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p` |
+| ACTIVAR | `d=8,o=5,b=200:8c,8e,8g,8c6,8e6,8d6,8c6,4g` |
+| DESACTIVAR | `d=8,o=5,b=200:8c6,8g,8e,8c,8a4,8g,8e,4c` |
+| BEEP_FLASH | `d=8,o=5,b=300:b` |
 
 Las cadenas se definen en `melodies.h` como `static const char[] PROGMEM` para ahorrar RAM en el ESP8266.
 

@@ -257,7 +257,7 @@ script:
     mode: single
     then:
       - lambda: 'id(system_active) = true;'
-      - rtttl.play: "activar:d=1,o=5,b=200:c5,e5,g5"
+      - rtttl.play: !lambda 'return std::string(ACTIVAR);'
       - light.turn_on:
           id: led_light
           brightness: 100%
@@ -284,7 +284,7 @@ script:
     mode: single
     then:
       - lambda: 'id(system_active) = false;'
-      - rtttl.play: "desactivar:d=1,o=5,b=200:g5,e5,c5"
+      - rtttl.play: !lambda 'return std::string(DESACTIVAR);'
       - light.turn_on:
           id: led_light
           brightness: 100%
@@ -343,13 +343,9 @@ script:
                 id: led_light
                 brightness: 100%
                 transition_length: 0s
-            - output.ledc.write:
-                id: buzzer_output
-                frequency: 980Hz
-                duty: 0.5
+            - rtttl.play: !lambda 'return std::string(BEEP_FLASH);'
             - delay: 100ms
             - light.turn_off:
                 id: led_light
                 transition_length: 0s
-            - output.turn_off: buzzer_output
             - delay: !lambda 'return id(gate_open_flash_interval_ms) - 100;'
