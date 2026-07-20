@@ -51,34 +51,44 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 ## Distribución Física
 
 ```mermaid
-flowchart TB
-    subgraph Salon["SALÓN"]
-        SPanel["Panel de control<br/>─────────<br/>Pulsador Interno<br/>LED Estado 12V<br/>Buzzer Musical + 🔊 Vol."]
+flowchart LR
+    subgraph Salon["🏠 SALÓN"]
+        direction TB
+        S_Btn["🔹 Pulsador Int<br/>GPIO4"]
+        S_Led["💡 LED 12V<br/>GPIO12"]
+        S_Buz["🔊 Buzzer + pot<br/>GPIO14"]
     end
 
-    subgraph Vestibulo["VESTÍBULO"]
-        MCU["Módulo MCU<br/>─────────<br/>NodeMCU ESP8266<br/>Fuente 5V<br/>Fuente 12V<br/>Relé NC"]
-        VPanel["Panel de control (réplica)<br/>─────────<br/>Pulsador Interno<br/>LED Estado 12V<br/>Buzzer Musical"]
+    subgraph Vestibulo["📍 VESTÍBULO"]
+        direction TB
+        V_Mcu["🧠 NodeMCU<br/>5V · 12V · Relé NC"]
+        V_Btn["🔹 Pulsador Int<br/>GPIO4"]
+        V_Led["💡 LED 12V<br/>GPIO12"]
+        V_Buz["🔊 Buzzer<br/>GPIO14"]
+        V_Ext["🔸 Pulsador Ext<br/>GPIO16"]
     end
 
-    subgraph Patio["PATIO"]
-        PPanel["Panel de timbre<br/>─────────<br/>Pulsador Externo<br/>LED Estado 3V<br/>Buzzer Musical"]
-        Pedal["Pedal Emergencia<br/>(NC serie con 12V)"]
-        Lock["Cerradura Magnética<br/>+ Final Carrera"]
+    subgraph Patio["🚪 PATIO"]
+        direction TB
+        P_Ext["🔸 Pulsador Ext<br/>GPIO16"]
+        P_Led["💡 LED 3V<br/>GPIO12"]
+        P_Buz["🔊 Buzzer<br/>GPIO14"]
+        P_FC["🚪 Final Carrera<br/>GPIO13"]
+        P_Lock["🔒 Cerradura 12V<br/>+ 🚫 Pedal NC"]
     end
 
-    subgraph Exterior["EXTERIOR"]
-        EPanel["Panel de timbre<br/>─────────<br/>Pulsador Externo<br/>LED Estado 3V"]
+    subgraph Exterior["🌳 EXTERIOR"]
+        direction TB
+        E_Ext["🔸 Pulsador Ext<br/>GPIO16"]
+        E_Led["💡 LED 3V<br/>GPIO12"]
     end
 
-    Salon --- UTP["UTP Cat5 (4 pares)"] --- Vestibulo
-    Vestibulo --- Patio
-    Patio --- Exterior
-
-    MCU -.-> VPanel
-    MCU -.-> SPanel
-    MCU -.-> PPanel
-    MCU -.-> EPanel
+    S_Btn --- V_Btn
+    S_Led --- V_Led --- P_Led --- E_Led
+    S_Buz --- V_Buz --- P_Buz
+    V_Ext --- P_Ext --- E_Ext
+    V_Mcu --- P_FC
+    V_Mcu --- P_Lock
 ```
 
 ## Cableado (UTP Cat5, 4 pares)
