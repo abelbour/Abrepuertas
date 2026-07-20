@@ -196,7 +196,7 @@ el relé no se confunde con emergencia.
 | 🚪 Abierta tras desbloqueo | OFF | Pitido c/flash | Flash lento `gate_open_flash_interval` |
 | 🚪 Cerrada tras desbloqueo | OFF | — | 25% |
 | 🚪 FC → OFF (cierra) | — | — | Si estaba en flash lento → 25% |
-| 🚨 Emergencia (🚪ON + 🔒OFF) | — | RTTTL Emergencia (×4) | Fast Flash 5s |
+| 🚨 Emergencia (🚪ON + 🔒OFF) | — | RTTTL Emergencia (×4) | LED sincronizado 1067ms ON / 133ms OFF |
 
 Mientras el sistema está DESACTIVADO el relé permanece ON y cualquier pulsación (externa o interna) es ignorada.
 Los pulsadores externos **nunca desbloquean** la puerta — solo tocan el timbre.
@@ -417,27 +417,37 @@ flowchart LR
 flowchart LR
     subgraph UTP["📦 UTP"]
         AZ["💡 Par 3 AZ<br/>GPIO12 PWM"]
+        BLAZ["🔊 Par 3 BL/AZ<br/>GPIO14 Buzzer"]
         P4MR["⚡ Par 4 MR<br/>+12V"]
         GND["⬛ Par 4 BL/MR<br/>GND"]
         P1BL["🔹 Par 1 BL<br/>GPIO4"]
     end
 
-    subgraph Panel["🔹 Panel Interno"]
+    subgraph LedDriver["💡 LED (ambos paneles)"]
         R1[1kΩ] --> B[BC337 Base]
         AZ --> R1
         B --> C[BC337 Colector]
         P4MR --> R2[470Ω] --> C
         E[BC337 Emisor] --> GND
-
         C --> LED12["💡 LED 12V"]
         LED12 --> GND
-
-        P1BL --> BtnInt["🔹 Pulsador Int<br/>NA → GND"]
-        BtnInt --> GND
     end
+
+    subgraph BuzzerSalon["🔊 Salón (con pot)"]
+        BLAZ --> POT["Pot 10kΩ<br/>reóstato"] --> BZ_SALON["Buzzer +"] --> BZ_SALON_GND["Buzzer −"] --> GND
+    end
+
+    subgraph BuzzerVest["🔊 Vestíbulo (directo)"]
+        BLAZ --> BZ_VEST["Buzzer +"] --> BZ_VEST_GND["Buzzer −"] --> GND
+    end
+
+    P1BL --> BtnInt["🔹 Pulsador Int<br/>NA → GND"]
+    BtnInt --> GND
 ```
 
-> **Panel de salón**: el buzzer lleva un potenciómetro de 10kΩ en serie (reóstato) entre Par 3 BL/AZ y el buzzer (+). Vestíbulo y patio conectan el buzzer directamente. Exterior no lleva buzzer.
+> **Panel de salón**: el buzzer lleva potenciómetro de 10kΩ en serie (reóstato) entre BL/AZ y el buzzer (+).
+> **Panel de vestíbulo**: el buzzer se conecta directamente entre BL/AZ y GND (sin pot).
+> Ambos paneles comparten el mismo circuito de LED (BC337 + 12V).
 
 ### 11.4 Circuito — Panel Externo (patio)
 
@@ -495,7 +505,23 @@ Flujo: `+12V → Par 4 MR → Relé COM → NC → Par 2 V → Pedal NC → Cerr
 | Cerrado (OFF) | Abierto | ⬛ 0V → apertura emergencia |
 | Abierto (ON) | — | ⬛ 0V → desbloqueo normal |
 
-### 11.6 Swimlane — `external_press`
+### 11.6 Pull-up de pulsador externo (GPIO16)
+
+El pull-up de 10kΩ para GPIO16 está en el **vestíbulo**, junto al MCU. No en los paneles remotos.
+
+```mermaid
+flowchart LR
+    subgraph Vestibulo["📍 Vestíbulo"]
+        VCC["3.3V"] --> R10k["10kΩ"] --> G16["GPIO16"]
+        G16 --> PA1["Par 1 NA"] --> Patio
+    end
+
+    subgraph Patio["🚪 Patio / 🌳 Exterior"]
+        PA1 --> Btn["🔸 Pulsador NA"] --> GND_P["⬛ GND"]
+    end
+```
+
+### 11.7 Swimlane — `external_press`
 
 ```mermaid
 flowchart TD
@@ -518,7 +544,7 @@ flowchart TD
         TIMEOUT[timer expira 60s] --> RESET[Índice melodía → 0]
     end
 
-    subgraph PAN["🟧 TODAS LAS ZONAS"]
+    subgraph PAN["🟧 SALÓN / VESTÍBULO / PATIO"]
         LED[LED → Latido suave 100%]
         LED2[LED → 25% reposo]
         MELO[Melodía suena]
@@ -532,7 +558,7 @@ flowchart TD
     style FIN_EXT fill:#f9f,stroke:#333
 ```
 
-### 11.7 Swimlane — `internal_press`
+### 11.8 Swimlane — `internal_press`
 
 ```mermaid
 flowchart TD
@@ -559,7 +585,7 @@ flowchart TD
         FC[FC detecta puerta abierta]
     end
 
-    subgraph PAN["🟧 TODAS LAS ZONAS"]
+    subgraph PAN["🟧 SALÓN / VESTÍBULO / PATIO"]
         LED[LED → Flash rápido]
         BEEP[RTTTL Apertura]
         LED2[LED → Flash lento + pitido]
@@ -574,7 +600,7 @@ flowchart TD
     FC --> LED2
 ```
 
-### 11.8 Swimlane — `unlock_gate`
+### 11.9 Swimlane — `unlock_gate`
 
 ```mermaid
 flowchart TD
@@ -603,7 +629,7 @@ flowchart TD
         FC_OFF[Final Carrera = OFF]
     end
 
-    subgraph PAN["🟧 TODAS LAS ZONAS"]
+    subgraph PAN["🟧 SALÓN / VESTÍBULO / PATIO"]
         BEEP[RTTTL Apertura sonando]
         SILENCIO[Buzzer OFF]
     end
@@ -615,7 +641,7 @@ flowchart TD
     STOP --> SILENCIO
 ```
 
-### 11.9 Swimlane — Detección de emergencia
+### 11.10 Swimlane — Detección de emergencia
 
 ```mermaid
 flowchart TD
@@ -652,3 +678,28 @@ esphome-gate/
 ├── melodies.h             # Definiciones RTTTL (referencia)
 └── secrets.yaml           # Credenciales WiFi (editar antes de compilar)
 ```
+
+## 13. Lista de Materiales
+
+| # | Componente | Cant. | Especificación | Ubicación |
+|---|-----------|:-----:|----------------|-----------|
+| 1 | NodeMCU ESP8266 | 1 | ESP-12E, CP2102, microUSB | Vestíbulo |
+| 2 | Fuente 5V | 1 | 5V DC, ≥1A, tipo cargador USB | Vestíbulo |
+| 3 | Fuente 12V | 1 | 12V DC, ≥2A, tipo brick | Vestíbulo |
+| 4 | Relé NC | 1 | Módulo relé 1 canal, 5V bobina, 10A/250V contacto | Vestíbulo |
+| 5 | Cerradura Magnética | 1 | 12V, tipo ML-1501 o similar, ≤1.5A | Patio |
+| 6 | Final de Carrera | 1 | NA (normalmente abierto), tipo microswitch con rodillo | Patio |
+| 7 | Pedal de Emergencia | 1 | NC (normalmente cerrado), tipo pedal metálico o interruptor de pie | Patio |
+| 8 | Buzzer piezoeléctrico | 3 | Zumbador piezo sin oscilador, 3–24V, tipo 2312 o similar | Salón / Vest. / Patio |
+| 9 | Pulsador NA (interno) | 2 | Pulsador momentáneo NA, tipo campana o táctil | Salón / Vestíbulo |
+| 10 | Pulsador NA (externo) | 2 | Pulsador momentáneo NA, tipo timbre estanco IP54 | Patio / Exterior |
+| 11 | LED 5mm | 4 | Color a elección, 12V internos, 3.3V externos | 1 por panel |
+| 12 | Transistor NPN BC337 | 2 | TO-92, 45V/800mA | Salón / Vestíbulo |
+| 13 | Resistencia 1kΩ | 2 | 1/4W, carbon film | Salón / Vestíbulo (base BC337) |
+| 14 | Resistencia 470Ω | 2 | 1/4W, carbon film | Salón / Vestíbulo (LED 12V colector) |
+| 15 | Resistencia 150Ω | 2 | 1/4W, carbon film | Patio / Exterior (LED 3.3V serie) |
+| 16 | Resistencia 10kΩ | 1 | 1/4W, carbon film | Vestíbulo (pull-up GPIO16) |
+| 17 | Potenciómetro 10kΩ | 1 | Lineal, tipo reóstato, 6mm, ejey 15mm | Salón (volumen buzzer) |
+| 18 | Cable UTP Cat5 | 1 | 4 pares, sólido, CCA o cobre, largo según distancia | Entre todas las zonas |
+| 19 | Placa perforada / protoboard | 1 | 7×5 cm o similar | Vestíbulo (montaje MCU) |
+| 20 | Cables dupont / manguera | — | Varios, 22AWG | Conexiones locales en cada panel |
