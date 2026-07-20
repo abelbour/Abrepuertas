@@ -114,7 +114,7 @@ flowchart TB
 ### 3.5 Buzzer Musical (RTTTL)
 - GPIO14 (PWM). Por par 3 BL/AZ a los paneles de salón, vestíbulo y patio (el exterior no lleva buzzer).
 - El panel de salón lleva un potenciómetro en serie (reóstato, 10kΩ lineal) para ajuste local de volumen:
-- ```
+```
 Salón:    BL/AZ ── pot 10kΩ ── buzzer (+) ── (-) ── GND
 Vestíbulo: BL/AZ ────────────── buzzer (+) ── (-) ── GND
 Patio:    BL/AZ ────────────── buzzer (+) ── (-) ── GND
