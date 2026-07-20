@@ -1,0 +1,364 @@
+esphome:
+  name: esphome-gate
+  platform: ESP8266
+  board: nodemcuv2
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Gate Fallback Hotspot"
+    password: !secret ap_password
+
+captive_portal:
+
+web_server:
+  port: 80
+
+logger:
+  baud_rate: 0
+
+ota:
+
+output:
+  - platform: esp8266_pwm
+    pin: GPIO12
+    frequency: 1000Hz
+    id: led_output
+  - platform: esp8266_pwm
+    pin: GPIO14
+    frequency: 2000Hz
+    id: buzzer_output
+  - platform: gpio
+    pin: GPIO5
+    id: lock_relay
+
+light:
+  - platform: monochromatic
+    output: led_output
+    id: led_light
+    name: "LED Estado"
+    default_transition_length: 0s
+    effects:
+      - pulse:
+          name: "Latido Suave"
+          transition_length: 1s
+          update_interval: 1s
+          min_brightness: 50%
+          max_brightness: 100%
+      - strobe:
+          name: "Flash Rapido"
+          duration: 200ms
+
+rtttl:
+  output: buzzer_output
+  id: buzzer_rtttl
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO4
+      inverted: true
+    id: pulsador_interno
+    name: "Pulsador Interno"
+    filters:
+      - delayed_on_off: 50ms
+    on_click:
+      - min_length: 50ms
+        max_length: 3900ms
+        then:
+          - lambda: |-
+              if (id(system_active)) {
+                id(internal_press_script).execute();
+              }
+      - min_length: 4100ms
+        max_length: 7900ms
+        then:
+          - lambda: |-
+              if (!id(system_active)) {
+                id(enable_system_script).execute();
+              }
+      - min_length: 8100ms
+        max_length: 60000ms
+        then:
+          - lambda: |-
+              if (id(system_active)) {
+                id(disable_system_script).execute();
+              }
+
+  - platform: gpio
+    pin: GPIO16
+    id: pulsador_externo
+    name: "Pulsador Externo"
+    filters:
+      - delayed_on_off: 50ms
+    on_click:
+      - min_length: 50ms
+        max_length: 3900ms
+        then:
+          - script.execute: external_press_script
+
+  - platform: gpio
+    pin:
+      number: GPIO13
+      mode: INPUT_PULLUP
+    id: final_carrera
+    name: "Final Carrera"
+    filters:
+      - delayed_on_off: 100ms
+    on_press:
+      then:
+        - lambda: |-
+            if (!id(desbloqueo_normal_activo) && !id(lock_relay).state) {
+              id(emergency_alert_script).execute();
+            }
+    on_release:
+      then:
+        - script.stop: gate_open_flash_script
+        - light.turn_on:
+            id: led_light
+            brightness: 25%
+            transition_length: 1s
+        - output.turn_off: buzzer_output
+
+globals:
+  - id: system_active
+    type: bool
+    initial_value: 'false'
+  - id: melody_index
+    type: int
+    initial_value: '0'
+  - id: cooldown_externo_activo
+    type: bool
+    initial_value: 'false'
+  - id: desbloqueo_normal_activo
+    type: bool
+    initial_value: 'false'
+  - id: unlock_duration_ms
+    type: int
+    initial_value: '5000'
+  - id: beep_pause
+    type: int
+    initial_value: '400'
+  - id: beep_step
+    type: int
+    initial_value: '0'
+  - id: melodies
+    type: std::vector<std::string>
+    initial_value: |-
+      {
+        "mel1:d=4,o=4,b=100:a,8c5,8c5,1g,a,c5,b,a,2g",
+        "mel2:d=4,o=4,b=100:f,a,c5,2g,a,c5,b,a,2g",
+        "mel3:d=4,o=4,b=100:g,g,2a,a,g,f,g,2e",
+        "mel4:d=4,o=4,b=100:8p,8a,b,c5,c5,b,a,g,a,8g,8f,16e,16d,8c"
+      }
+
+number:
+  - platform: template
+    name: "Doorbell LED Duration"
+    min_value: 10
+    max_value: 120
+    step: 1
+    unit_of_measurement: s
+    initial_value: 45
+    id: doorbell_led_duration
+    optimistic: true
+    set_action:
+      - lambda: 'id(doorbell_led_duration).publish_state(x);'
+  - platform: template
+    name: "Gate Open Flash Interval"
+    min_value: 1
+    max_value: 30
+    step: 1
+    unit_of_measurement: s
+    initial_value: 5
+    id: gate_open_flash_interval
+    optimistic: true
+    set_action:
+      - lambda: 'id(gate_open_flash_interval).publish_state(x);'
+
+timer:
+  - id: timer_reset_melodia
+    mode: single
+    duration: 60s
+    then:
+      - lambda: 'id(melody_index) = 0;'
+
+script:
+  - id: external_press_script
+    mode: single
+    then:
+      - if:
+          condition:
+            lambda: 'return id(system_active) && !id(cooldown_externo_activo);'
+          then:
+            - lambda: 'id(cooldown_externo_activo) = true;'
+            - timer.cancel: timer_reset_melodia
+            - output.turn_off: buzzer_output
+            - lambda: 'id(buzzer_rtttl)->play(id(melodies)[id(melody_index)]);'
+            - light.turn_on:
+                id: led_light
+                effect: "Latido Suave"
+                brightness: 100%
+            - delay: !lambda 'return int(id(doorbell_led_duration).state * 1000);'
+            - light.turn_on:
+                id: led_light
+                brightness: 25%
+                transition_length: 1s
+            - lambda: 'id(cooldown_externo_activo) = false;'
+            - lambda: 'id(melody_index) = (id(melody_index) + 1) % 4;'
+            - timer.start: timer_reset_melodia
+
+  - id: internal_press_script
+    mode: single
+    then:
+      - if:
+          condition:
+            lambda: 'return id(system_active);'
+          then:
+            - light.turn_on:
+                id: led_light
+                effect: "Flash Rapido"
+                brightness: 100%
+            - output.turn_off: buzzer_output
+            - script.execute: unlock_gate_script
+            - delay: !lambda 'return int(id(doorbell_led_duration).state * 1000);'
+            - lambda: |-
+                if (id(final_carrera).state) {
+                  id(melody_index) = 0;
+                  id(gate_open_flash_script).execute();
+                } else {
+                  id(led_light).turn_on();
+                  id(led_light).set_brightness(0.25);
+                }
+
+  - id: unlock_gate_script
+    mode: single
+    then:
+      - lambda: 'id(desbloqueo_normal_activo) = true;'
+      - output.turn_on: lock_relay
+      - script.execute: flash_and_beep_script
+      - wait_until:
+          condition:
+            lambda: 'return id(final_carrera).state;'
+          timeout: !lambda 'return id(unlock_duration_ms);'
+      - output.turn_off: lock_relay
+      - script.stop: flash_and_beep_script
+      - rtttl.stop: buzzer_rtttl
+      - output.turn_off: buzzer_output
+      - lambda: 'id(desbloqueo_normal_activo) = false;'
+
+  - id: flash_and_beep_script
+    mode: single
+    then:
+      - lambda: 'id(beep_step) = 0;'
+      - while:
+          condition:
+            lambda: 'return id(lock_relay).state;'
+          then:
+            - output.ledc.write:
+                id: buzzer_output
+                frequency: 980Hz
+                duty: 0.5
+            - delay: 80ms
+            - output.turn_off: buzzer_output
+            - lambda: |-
+                int pauses[] = {400, 350, 300, 250, 200, 150, 100, 75, 50};
+                id(beep_pause) = pauses[id(beep_step)];
+                if (id(beep_step) < 8) id(beep_step)++;
+            - delay: !lambda 'return id(beep_pause);'
+
+  - id: enable_system_script
+    mode: single
+    then:
+      - lambda: 'id(system_active) = true;'
+      - rtttl.play: "activar:d=1,o=5,b=200:c5,e5,g5"
+      - light.turn_on:
+          id: led_light
+          brightness: 100%
+      - delay: 200ms
+      - light.turn_off: led_light
+      - delay: 200ms
+      - light.turn_on:
+          id: led_light
+          brightness: 100%
+      - delay: 200ms
+      - light.turn_off: led_light
+      - delay: 200ms
+      - light.turn_on:
+          id: led_light
+          brightness: 100%
+      - delay: 200ms
+      - light.turn_off: led_light
+      - light.turn_on:
+          id: led_light
+          brightness: 25%
+      - output.turn_off: lock_relay
+
+  - id: disable_system_script
+    mode: single
+    then:
+      - lambda: 'id(system_active) = false;'
+      - rtttl.play: "desactivar:d=1,o=5,b=200:g5,e5,c5"
+      - light.turn_on:
+          id: led_light
+          brightness: 100%
+      - delay: 600ms
+      - light.turn_off: led_light
+      - delay: 600ms
+      - light.turn_on:
+          id: led_light
+          brightness: 100%
+      - delay: 600ms
+      - light.turn_off: led_light
+      - delay: 600ms
+      - light.turn_on:
+          id: led_light
+          brightness: 100%
+      - delay: 600ms
+      - light.turn_off: led_light
+      - output.turn_on: lock_relay
+
+  - id: emergency_alert_script
+    mode: single
+    then:
+      - lambda: |-
+          for (int i = 0; i < 5; i++) {
+            id(buzzer_output)->turn_on();
+            id(buzzer_output)->set_frequency(800);
+            id(led_light).turn_on();
+            id(led_light).set_brightness(1.0);
+            delay(500);
+            id(buzzer_output)->set_frequency(1200);
+            delay(500);
+          }
+          id(buzzer_output)->turn_off();
+      - lambda: |-
+          if (id(final_carrera).state) {
+            id(gate_open_flash_script).execute();
+          } else {
+            id(led_light).turn_on();
+            id(led_light).set_brightness(0.25);
+          }
+
+  - id: gate_open_flash_script
+    mode: parallel
+    then:
+      - while:
+          condition:
+            lambda: 'return id(final_carrera).state;'
+          then:
+            - light.turn_on:
+                id: led_light
+                brightness: 100%
+                transition_length: 0s
+            - output.ledc.write:
+                id: buzzer_output
+                frequency: 980Hz
+                duty: 0.5
+            - delay: 100ms
+            - light.turn_off:
+                id: led_light
+                transition_length: 0s
+            - output.turn_off: buzzer_output
+            - delay: !lambda 'return int(id(gate_open_flash_interval).state * 1000) - 100;'

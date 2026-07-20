@@ -622,7 +622,8 @@ flowchart TD
 
 ```
 esphome-gate/
-├── SYSTEM_DEFINITION.md
-├── esphome-gate.yaml       # (generar a partir de la definición)
-└── secrets.yaml            # (crear) WiFi password
+├── SYSTEM_DEFINITION.md   # Especificación completa del sistema
+├── esphome-gate.yaml      # Configuración ESPHome
+├── melodies.h             # Definiciones RTTTL (referencia)
+└── secrets.yaml           # Credenciales WiFi (editar antes de compilar)
 ```
