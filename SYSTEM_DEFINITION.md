@@ -25,28 +25,29 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 
 ## 2. Lista de Materiales
 
-| # | Componente | Cant. | Especificación | Ubicación |
-|---|-----------|:-----:|----------------|-----------|
-| 1 | NodeMCU ESP8266 | 1 | ESP-12E, CP2102, microUSB | Vestíbulo |
-| 2 | Fuente 5V | 1 | 5V DC, ≥1A, tipo cargador USB | Vestíbulo |
-| 3 | Fuente 12V | 1 | 12V DC, ≥2A, tipo brick | Vestíbulo |
-| 4 | Relé NC | 1 | Módulo relé 1 canal, 5V bobina, 10A/250V contacto | Vestíbulo |
-| 5 | Cerradura Magnética | 1 | 12V, tipo ML-1501 o similar, ≤1.5A | Patio |
-| 6 | Final de Carrera | 1 | NA (normalmente abierto), tipo microswitch con rodillo | Patio |
-| 7 | Pedal de Emergencia | 1 | NC (normalmente cerrado), tipo pedal metálico o interruptor de pie | Patio |
-| 8 | Buzzer piezoeléctrico | 3 | Zumbador piezo sin oscilador, 3–24V, tipo 2312 o similar | Salón / Vest. / Patio |
-| 9 | Pulsador NA (interno) | 2 | Pulsador momentáneo NA, tipo campana o táctil | Salón / Vestíbulo |
-| 10 | Pulsador NA (externo) | 2 | Pulsador momentáneo NA, tipo timbre estanco IP54 | Patio / Exterior |
-| 11 | LED 5mm | 4 | Color a elección, 12V internos, 3.3V externos | 1 por panel |
-| 12 | Transistor NPN BC337 | 2 | TO-92, 45V/800mA | Salón / Vestíbulo |
-| 13 | Resistencia 1kΩ | 2 | 1/4W, carbon film | Salón / Vestíbulo (base BC337) |
-| 14 | Resistencia 470Ω | 2 | 1/4W, carbon film | Salón / Vestíbulo (LED 12V colector) |
-| 15 | Resistencia 150Ω | 2 | 1/4W, carbon film | Patio / Exterior (LED 3.3V serie) |
-| 16 | Resistencia 10kΩ | 1 | 1/4W, carbon film | Vestíbulo (pull-up GPIO16) |
-| 17 | Potenciómetro 10kΩ | 1 | Lineal, tipo reóstato, 6mm, ejey 15mm | Salón (volumen buzzer) |
-| 18 | Cable UTP Cat5 | 1 | 4 pares, sólido, CCA o cobre, largo según distancia | Entre todas las zonas |
-| 19 | Placa perforada / protoboard | 1 | 7×5 cm o similar | Vestíbulo (montaje MCU) |
-| 20 | Cables dupont / manguera | — | Varios, 22AWG | Conexiones locales en cada panel |
+| # | Componente | Cant. | Precio | Especificación | Ubicación |
+|---|-----------|:-----:|:-----:|----------------|-----------|
+| 1 | NodeMCU ESP8266 | 1 | — | ESP-12E, CP2102, microUSB | Vestíbulo |
+| 2 | Fuente 5V | 1 | — | 5V DC, ≥1A, tipo cargador USB | Vestíbulo |
+| 3 | Fuente 12V | 1 | — | 12V DC, ≥2A, tipo brick | Vestíbulo |
+| 4 | Relé NC | 1 | — | Módulo relé 1 canal, 5V bobina, 10A/250V contacto | Vestíbulo |
+| 5 | Cerradura Magnética | 1 | — | 12V, tipo ML-1501 o similar, ≤1.5A | Patio |
+| 6 | Final de Carrera | 1 | — | NA (normalmente abierto), tipo microswitch con rodillo | Patio |
+| 7 | Pedal de Emergencia | 1 | — | NC (normalmente cerrado), tipo pedal metálico o interruptor de pie | Patio |
+| 8 | Buzzer piezoeléctrico | 3 | — | Zumbador piezo sin oscilador, 3–24V, tipo 2312 o similar | Salón / Vest. / Patio |
+| 9 | Pulsador NA (interno) | 2 | — | Pulsador momentáneo NA, tipo campana o táctil | Salón / Vestíbulo |
+| 10 | Pulsador NA (externo) | 2 | — | Pulsador momentáneo NA, tipo timbre estanco IP54 | Patio / Exterior |
+| 11 | LED 5mm | 4 | — | Color a elección, 12V internos, 3.3V externos | 1 por panel |
+| 12 | Transistor NPN BC337 | 2 | — | TO-92, 45V/800mA | Salón / Vestíbulo |
+| 13 | Resistencia 1kΩ | 2 | — | 1/4W, carbon film | Salón / Vestíbulo (base BC337) |
+| 14 | Resistencia 470Ω | 2 | — | 1/4W, carbon film | Salón / Vestíbulo (LED 12V colector) |
+| 15 | Resistencia 150Ω | 2 | — | 1/4W, carbon film | Patio / Exterior (LED 3.3V serie) |
+| 16 | Resistencia 10kΩ | 1 | — | 1/4W, carbon film | Vestíbulo (pull-up GPIO16) |
+| 17 | Potenciómetro 10kΩ | 1 | — | Lineal, tipo reóstato, 6mm, ejey 15mm | Salón (volumen buzzer) |
+| 18 | Cable UTP Cat5 | 1 | — | 4 pares, sólido, CCA o cobre, largo según distancia | Entre todas las zonas |
+| 19 | Placa perforada / protoboard | 1 | — | 7×5 cm o similar | Vestíbulo (montaje MCU) |
+| 20 | Cables dupont / manguera | — | — | Varios, 22AWG | Conexiones locales en cada panel |
+| | **Total** | | **—** | | |
 
 ## Distribución Física
 
