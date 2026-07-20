@@ -481,9 +481,9 @@ flowchart TD
     subgraph MCU["🟩 MCU (Vestíbulo)"]
         A{"Sistema ACTIVADO?"}
         A -- No --> FIN_EXT[Ignorar]
-        A -- Sí --> B{"LED en reposo<br/>(sin cooldown)?"}
-        B -- No --> FIN_EXT
-        B -- Sí --> CANCEL[Cancelar timer_reset_melodia]
+        A -- Sí --> B{"cooldown_externo_activo?"}
+        B -- Sí --> FIN_EXT
+        B -- No --> CANCEL[Cancelar timer_reset_melodia]
         CANCEL --> PLAY[Reproducir melodía actual RTTTL]
         PLAY --> WAIT[Esperar doorbell_led_duration]
         WAIT --> ADV[Índice melodía + 1]
