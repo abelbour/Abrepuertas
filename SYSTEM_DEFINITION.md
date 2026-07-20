@@ -68,6 +68,7 @@ flowchart LR
         PP["Panel de timbre<br/>─────────<br/>🔸 Pulsador Ext (GPIO16)<br/>💡 LED 3V (GPIO12)<br/>🔊 Buzzer (GPIO14)"]
         PED["🚫 Pedal Emergencia (NC)"]
         LK["🔒 Cerradura 12V<br/>🚪 Final Carrera (GPIO13)"]
+        PP --> PED --> LK
     end
 
     subgraph Exterior["🌳 EXTERIOR"]
