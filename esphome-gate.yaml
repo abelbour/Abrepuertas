@@ -239,19 +239,48 @@ script:
   - id: unlock_gate_script
     mode: single
     then:
-      - lambda: 'id(desbloqueo_normal_activo) = true;'
-      - rtttl.stop: buzzer_rtttl
-      - output.turn_off: buzzer_output
-      - rtttl.play: !lambda 'return std::string(APERTURA);'
-      - output.turn_on: lock_relay
-      - wait_until:
-          condition:
-            lambda: 'return id(final_carrera).state;'
-          timeout: !lambda 'return id(unlock_duration_ms);'
-      - output.turn_off: lock_relay
-      - rtttl.stop: buzzer_rtttl
-      - output.turn_off: buzzer_output
-      - lambda: 'id(desbloqueo_normal_activo) = false;'
+      - lambda: |
+          id(desbloqueo_normal_activo) = true;
+          id(buzzer_rtttl).stop();
+          id(buzzer_output).turn_off();
+          id(lock_relay).turn_on();
+
+          unsigned long start = millis();
+          unsigned long timeout = id(unlock_duration_ms);
+          unsigned long last_toggle = 0;
+          bool led_on = false;
+
+          // APERTURA = d=16,o=7,b=225:c,p,c,p,...
+          // 16th note at 225 BPM = 67ms
+          while (!id(final_carrera).state && millis() - start < timeout) {
+            unsigned long now = millis();
+
+            if (!id(buzzer_rtttl).is_playing()) {
+              id(buzzer_rtttl).play(std::string(APERTURA));
+            }
+
+            if (now - last_toggle >= 67) {
+              led_on = !led_on;
+              last_toggle = now;
+              auto call = id(led_light).make_call();
+              call.set_brightness(led_on ? 1.0f : 0.0f);
+              call.set_transition_length(0);
+              call.perform();
+            }
+
+            delay(10);
+          }
+
+          id(lock_relay).turn_off();
+          id(buzzer_rtttl).stop();
+          id(buzzer_output).turn_off();
+          {
+            auto call = id(led_light).make_call();
+            call.set_brightness(0.25f);
+            call.set_transition_length(1000);
+            call.perform();
+          }
+          id(desbloqueo_normal_activo) = false;
 
   - id: enable_system_script
     mode: single
@@ -315,11 +344,28 @@ script:
             lambda: 'return id(emergency_cycle) < 12 && id(final_carrera).state;'
           then:
             - rtttl.play: !lambda 'return std::string(EMERGENCIA);'
-            - light.turn_on:
-                id: led_light
-                brightness: 100%
-                transition_length: 0s
-            - delay: 4800ms
+            - lambda: |
+                // EMERGENCIA = d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p
+                // whole note ~1067ms, 8th rest ~133ms
+                for (int i = 0; i < 4 && id(final_carrera).state; i++) {
+                  {
+                    auto call = id(led_light).make_call();
+                    call.set_brightness(1.0f);
+                    call.set_transition_length(0);
+                    call.perform();
+                  }
+                  unsigned long t = millis();
+                  while (millis() - t < 1067 && id(final_carrera).state) delay(10);
+
+                  {
+                    auto call = id(led_light).make_call();
+                    call.set_brightness(0.0f);
+                    call.set_transition_length(0);
+                    call.perform();
+                  }
+                  t = millis();
+                  while (millis() - t < 133 && id(final_carrera).state) delay(10);
+                }
             - lambda: 'id(emergency_cycle)++;'
       - output.turn_off: buzzer_output
       - lambda: |-

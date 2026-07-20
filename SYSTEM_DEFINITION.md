@@ -235,28 +235,32 @@ y no comparte cooldown con el externo — son independientes.
 ### 7.3 `unlock_gate`
 ```
 1. desbloqueo_normal_activo = true
-2. Reproducir sonido de apertura (RTTTL Apertura)
-3. Relé → ON
-4. Esperar hasta: final carrera ON  O  unlock_duration
-5. Relé → OFF
-6. Detener RTTTL. Apagar buzzer.
+2. Relé → ON. Detener RTTTL anterior.
+3. Bucle hasta: final carrera ON  O  unlock_duration:
+   a. Reproducir sonido de apertura (RTTTL Apertura)
+   b. LED sincronizado: 67ms ON / 67ms OFF (sigue patrón c,p)
+   c. Esperar mientras suena (verificando FC y timeout cada 10ms)
+4. Relé → OFF
+5. Detener RTTTL. Apagar buzzer.
+6. LED → 25% (reposo, transición 1s)
 7. desbloqueo_normal_activo = false
 ```
 
-> `unlock_gate` **no controla el LED**. El LED lo gestiona `internal_press`
-> (flash rápido durante desbloqueo, luego flash lento o 25% según estado de la puerta).
+> `internal_press` gestiona el LED antes (flash rápido) y después (45s cooldown a 25%,
+> luego flash lento o reposo según FC). Durante el desbloqueo el LED sigue el ritmo
+> de la melodía APERTURA.
 
 ### 7.4 `flash_and_beep`
-Reproduce el sonido de **apertura** (RTTTL) durante el desbloqueo:
+Reproduce el sonido de **apertura** (RTTTL) en bucle durante el desbloqueo:
 
 ```
-d=16,o=7,b=225:c,p,c,p,...  (pitidos rápidos, ~12s de duración)
+d=16,o=7,b=225:c,p,c,p,...  (pitidos rápidos, se repite hasta que finalice el desbloqueo)
 ```
 
-El sonido se inicia junto con la activación del relé y se detiene al
-finalizar el desbloqueo (`unlock_gate`). El LED no se ve afectado por
-este script — tras el desbloqueo `internal_press` se encarga del
-estado final del LED.
+El sonido se inicia al activar el relé y se reproduce en bucle hasta que
+se active el final de carrera o expire `unlock_duration`. El LED parpadea
+sincronizado: 67ms ON (nota) / 67ms OFF (silencio). Tras el desbloqueo,
+el LED vuelve a 25% y `internal_press` gestiona el estado final.
 
 ### 7.5 `enable_system`
 ```
@@ -280,7 +284,7 @@ estado final del LED.
 ```
 1. Alarma de emergencia (RTTTL): se repite en bucle hasta 60s
    d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p  (~4.8s cada ciclo)
-2. LED → 100% durante toda la alarma
+2. LED sincronizado: 1067ms ON / 133ms OFF (sigue patrón c,8p)
 3. El bucle se corta si:
    - Se presiona el pulsador interno (→ unlock_gate)
    - La puerta se cierra (FC → OFF)
@@ -564,16 +568,19 @@ flowchart TD
     subgraph MCU["🟩 MCU (Vestíbulo)"]
         START[Inicio unlock_gate]
         START --> FLAG[desbloqueo_normal_activo = true]
-        FLAG --> RTTTL[Reproducir RTTTL Apertura]
-        RTTTL --> RELAY_ON[Relé → ON]
+        FLAG --> RELAY_ON[Relé → ON]
         RELAY_ON --> LOOP{FC = ON?}
         LOOP -- No --> TIMEOUT{"¿Pasó unlock_duration?"}
-        TIMEOUT -- No --> LOOP
+        TIMEOUT -- No --> RTTTL[Reproducir RTTTL Apertura]
+        RTTTL --> LEDSEQ[LED 67ms ON / 67ms OFF<br/>sigue patrón c,p]
+        LEDSEQ --> WAIT[Esperar mientras suena<br/>verifica FC y timeout]
+        WAIT --> LOOP
         TIMEOUT -- Sí --> RELAY_OFF[Relé → OFF]
         LOOP -- Sí --> RELAY_OFF
         RELAY_OFF --> STOP[Detener RTTTL]
         STOP --> BUZZ_OFF[Apagar buzzer]
-        BUZZ_OFF --> UNFLAG[desbloqueo_normal_activo = false]
+        BUZZ_OFF --> LEDREPO[LED → 25% reposo]
+        LEDREPO --> UNFLAG[desbloqueo_normal_activo = false]
     end
 
     subgraph LOCK["🟪 PATIO"]
@@ -607,10 +614,10 @@ flowchart TD
     subgraph MCU["🟩 MCU (Vestíbulo)"]
         EVT{desbloqueo_normal_activo<br/>O relé = ON?}
         EVT -- Sí --> NORMAL[Desbloqueo normal<br/>→ Relé OFF]
-        EVT -- No --> ALERT[Apertura no autorizada]
+        EVT -- No -->         ALERT[Apertura no autorizada]
         ALERT --> EMERG[emergency_alert]
         EMERG --> ALARM[RTTTL Emergencia<br/>4 ciclos tono grave + pausa]
-        ALARM --> FLASH[LED → 100% ~4.8s]
+        ALARM --> FLASH[LED sincronizado:<br/>1067ms ON / 133ms OFF<br/>sigue patrón c,8p]
         FLASH --> CHECK{¿Sigue abierta?}
         CHECK -- Sí --> SLOW[Flash lento + pitido<br/>gate_open_flash_interval]
         CHECK -- No --> SILENT[LED → 25%. Silencio]
