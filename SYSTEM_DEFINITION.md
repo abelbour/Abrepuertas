@@ -11,7 +11,7 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 ```mermaid
 flowchart TB
     subgraph Salon["SALÓN"]
-        SPanel["Panel de control<br/>─────────<br/>Pulsador Interno<br/>LED Estado 12V<br/>Buzzer Musical"]
+        SPanel["Panel de control<br/>─────────<br/>Pulsador Interno<br/>LED Estado 12V<br/>Buzzer Musical + 🔊 Vol."]
     end
 
     subgraph Vestibulo["VESTÍBULO"]
@@ -26,7 +26,7 @@ flowchart TB
     end
 
     subgraph Exterior["EXTERIOR"]
-        EPanel["Panel de timbre<br/>─────────<br/>Pulsador Externo<br/>LED Estado 3V<br/>Buzzer Musical"]
+        EPanel["Panel de timbre<br/>─────────<br/>Pulsador Externo<br/>LED Estado 3V"]
     end
 
     Salon --- UTP["UTP Cat5 (4 pares)"] --- Vestibulo
@@ -47,15 +47,16 @@ flowchart TB
 | 1 | NA | GPIO16 (pulsador externo) | 🔸 | Patio + Ext. | Entradas |
 | 2 | BL/V | GPIO13 (final carrera) | 🚪 | Patio | Patio |
 | 2 | V | Cerradura 12V (vía relé NC) | 🔒 | Patio | Patio |
-| 3 | BL/AZ | GPIO14 (buzzer musical) | 🔊 | Todas | Broadcast |
+| 3 | BL/AZ | GPIO14 (buzzer musical) | 🔊 | Salón + Vest. + Patio | Audio |
 | 3 | AZ | GPIO12 (PWM LEDs) | 💡 | Todas | Broadcast |
 | 4 | BL/MR | **GND común** | ⬛ | Todas | Power |
 | 4 | MR | **12V siempre vivo** | ⚡ | Todas | Power |
 
-- Par 1 = botones, par 2 = patio (FC + cerradura), par 3 = broadcast, par 4 = alimentación
+- Par 1 = botones, par 2 = patio (FC + cerradura), par 3 = audio (BL/AZ) + broadcast LED (AZ), par 4 = alimentación
+- Los paneles de salón, vestíbulo y patio llevan buzzer (GPIO14 por par 3 BL/AZ). El de salón adicionalmente tiene un potenciómetro de 10kΩ en serie (reóstato) para ajuste local de volumen. El exterior no lleva buzzer.
 - 12V viaja por par 4 MR junto con GND (par 4 BL/MR) — mejor para la fuente
 - Relé NC en vestíbulo conmuta 12V desde par 4 MR hacia par 2 V → cerradura en patio
-- Cada panel solo pela los pares que necesita (ej. exterior solo pares 1, 3, 4)
+- Cada panel solo pela los pares que necesita (ej. exterior solo pares 1, 3 AZ, 4 — sin BL/AZ)
 
 ## 1. Resumen de Hardware
 
@@ -66,7 +67,7 @@ flowchart TB
 | ⚡🔒 | Fuente 12V | Alimentación cerradura + LEDs (local en vestíbulo) |
 | 🔒 | Relé | Conmuta 12V de la cerradura (NC = cerrada) |
 | 🔒 | Cerradura Magnética | Mantiene la puerta cerrada mientras recibe 12V |
-| 🔊 | Buzzer Musical (RTTTL) | Zumbador piezoeléctrico — melodía y pitidos. ×4 unidades |
+| 🔊 | Buzzer Musical (RTTTL) | Zumbador piezoeléctrico — melodía y pitidos. ×3 unidades (salón con pot. volumen serie) |
 | 🔹 | Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
 | 🔸 | Pulsadores Externos (×2) | Patio y exterior — GPIO16 en paralelo |
 | 💡 | LEDs Estado (×4) | 12V internos, 3V externos |
@@ -81,7 +82,7 @@ flowchart TB
 | GPIO4 | 🔹 | Pulsadores internos (salón + vestíbulo, paralelo) | Entrada (pull-up, invertido) |
 | GPIO16 | 🔸 | Pulsadores externos (patio + exterior, paralelo) | Entrada (pull-up ext.) |
 | GPIO12 | 💡 | PWM LEDs — señal común a todas las zonas | Salida (PWM) |
-| GPIO14 | 🔊 | Buzzer Musical (×4, todas, paralelo) | Salida (PWM 2000 Hz, RTTTL) |
+| GPIO14 | 🔊 | Buzzer Musical (×3: salón, vestíbulo, patio; salón con pot. serie) | Salida (PWM 2000 Hz, RTTTL) |
 | GPIO5 | 🔒 | Relé de Cerradura (NC → lock, NA → libre) | Salida (relé) |
 | GPIO13 | 🚪 | Final de Carrera + detección emergencia | Entrada (pull-up, NA) |
 
@@ -111,8 +112,16 @@ flowchart TB
 - **Al cerrar la puerta** (FC → OFF): si el LED está en flash lento (estado puerta abierta), vuelve a 25% reposo. No afecta al cooldown externo.
 
 ### 3.5 Buzzer Musical (RTTTL)
-- GPIO14 (PWM). Paralelo a todas las zonas.
-- Todos los sonidos del sistema usan RTTTL (definidos en `melodies.h`):
+- GPIO14 (PWM). Por par 3 BL/AZ a los paneles de salón, vestíbulo y patio (el exterior no lleva buzzer).
+- El panel de salón lleva un potenciómetro en serie (reóstato, 10kΩ lineal) para ajuste local de volumen:
+- ```
+Salón:    BL/AZ ── pot 10kΩ ── buzzer (+) ── (-) ── GND
+Vestíbulo: BL/AZ ────────────── buzzer (+) ── (-) ── GND
+Patio:    BL/AZ ────────────── buzzer (+) ── (-) ── GND
+Exterior:  (sin conexión BL/AZ)
+```
+
+Todos los sonidos del sistema usan RTTTL (definidos en `melodies.h`):
   - `ALL_MELODIES[]`: 4 melodías de timbre
   - `APERTURA`: sonido de desbloqueo
   - `EMERGENCIA`: alarma de emergencia
@@ -387,14 +396,15 @@ flowchart LR
     end
 
     subgraph Paneles["📌 Paneles Remotos"]
-        Salon["🏠 Salón<br/>🔹💡🔊"]
+        Salon["🏠 Salón<br/>🔹💡🔊+🔊Vol."]
         Patio["🚪 Patio<br/>🔸🚪🔊💡🔒"]
-        Ext["🌳 Exterior<br/>🔸💡🔊"]
+        Ext["🌳 Exterior<br/>🔸💡"]
     end
 
     G4 & G16 --> P1
     G13 --> P2
-    G12 & G14 --> P3
+    G12 --> P3
+    G14 --> P3
     P1 --> Salon & Patio & Ext
     P2 --> Patio
     P3 --> Salon & Patio & Ext
@@ -427,7 +437,9 @@ flowchart LR
     end
 ```
 
-### 11.4 Circuito — Panel Externo (patio / exterior)
+> **Panel de salón**: el buzzer lleva un potenciómetro de 10kΩ en serie (reóstato) entre Par 3 BL/AZ y el buzzer (+). Vestíbulo y patio conectan el buzzer directamente. Exterior no lleva buzzer.
+
+### 11.4 Circuito — Panel Externo (patio)
 
 ```mermaid
 flowchart LR
@@ -438,7 +450,7 @@ flowchart LR
         GND["⬛ Par 4 BL/MR<br/>GND"]
     end
 
-    subgraph Panel["🔸 Panel Externo"]
+    subgraph Panel["🔸 Panel Patio"]
         NA --> Puls["🔸 Pulsador Ext<br/>NA"]
         Puls --> GND
 
@@ -450,7 +462,8 @@ flowchart LR
     end
 ```
 
-> El pull-up de 10kΩ a 3.3V para GPIO16 está en el **vestíbulo**, junto al MCU. El panel externo solo tiene el pulsador NA a GND.
+> El panel **exterior** es idéntico pero **sin el buzzer** — no conecta el hilo BL/AZ del par 3. Solo lleva pulsador (par 1 NA), LED (par 3 AZ) y alimentación (par 4).
+> El pull-up de 10kΩ a 3.3V para GPIO16 está en el **vestíbulo**, junto al MCU.
 ### 11.5 Circuito — Cerradura + Pedal de Emergencia
 
 ```mermaid
