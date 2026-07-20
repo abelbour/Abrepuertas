@@ -38,8 +38,8 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | 9 | Pulsador NA (interno) | 2 | $466,55 | $933,10 | ✔ Tenemos | Pulsador momentáneo NA, tipo campana | Salón / Vestíbulo |
 | 10 | Pulsador NA (externo) | 2 | — | — | ✔ Tenemos | Pulsador momentáneo NA, estanco IP54 | Patio / Exterior |
 | 11 | LED 5mm | 4 | — | — | | Color a elección, 12V internos / 3.3V externos | 1 por panel |
-| 12 | Transistor NPN BC337 | 2 | — | — | | TO-92, 45V/800mA | Salón / Vestíbulo |
-| 13 | Resistencia 1kΩ | 2 | $165,55 | $331,10 | | 1/4W, carbon film | Salón / Vestíbulo (base BC337) |
+| 12 | Transistor NPN 2N5551 | 2 | $165,55 | $331,10 | | TO-92, 160V/600mA, reemplazo BC337 | Salón / Vestíbulo |
+| 13 | Resistencia 1kΩ | 2 | $165,55 | $331,10 | | 1/4W, carbon film | Salón / Vestíbulo (base 2N5551) |
 | 14 | Resistencia 470Ω | 2 | $165,55 | $331,10 | | 1/4W, carbon film | Salón / Vestíbulo (LED 12V colector) |
 | 15 | Resistencia 150Ω | 2 | $165,55 | $331,10 | | 1/4W, carbon film | Patio / Exterior (LED 3.3V serie) |
 | 16 | Resistencia 10kΩ | 1 | $165,55 | $165,55 | | 1/4W, carbon film | Vestíbulo (pull-up GPIO16) |
@@ -47,8 +47,8 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | 18 | Cable UTP Cat5 (x 1m) | 1 | $406,35 | $406,35 | ✔ Tenemos | 4 pares, sólido, CCA o cobre | Entre todas las zonas |
 | 19 | Placa perforada 50×50mm | 1 | $918,05 | $918,05 | | 7×5 cm o similar | Vestíbulo (montaje MCU) |
 | 20 | Cables dupont H-H 40P 20cm | — | $2.648,80 | $2.648,80 | ✔ Tenemos | Varios, 22AWG | Conexiones locales |
-| | **Total general** | | | **$117.420,10** | | (16 cotizados, 4 pendientes) | |
-| | **Subtotal a comprar** | | | **$32.538,10** | | (excluye ✔ Tenemos) | |
+| | **Total general** | | | **$117.751,20** | | (17 cotizados, 3 pendientes) | |
+| | **Subtotal a comprar** | | | **$32.869,20** | | (excluye ✔ Tenemos) | |
 
 ## Distribución Física
 
