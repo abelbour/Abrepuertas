@@ -19,7 +19,7 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | 🔹 | Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
 | 🔸 | Pulsadores Externos (×2) | Patio y exterior — GPIO16 en paralelo |
 | 💡 | LEDs Estado (×4) | 12V internos, 3V externos |
-| 🔹💡 | Transistor NPN BC337 (×2) | Paneles internos — conmutan 12V al LED desde GPIO12 |
+| 🔹💡 | Transistor NPN 2N5551 (×2) | Paneles internos — conmutan 12V al LED desde GPIO12 |
 | 🚪 | Final de Carrera (NA) | GPIO13 — detecta puerta abierta/cerrada |
 | 🚫 | Pedal de Emergencia | Corte físico NC en serie con 12V de la cerradura |
 
@@ -38,7 +38,7 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | Pulsador NA (interno) | 2 | $466,55 | $933,10 ✅ | Pulsador momentáneo NA, tipo campana |
 | Pulsador NA (externo) | 2 | — | — ✅ | Pulsador momentáneo NA, estanco IP54 |
 | LED 5mm | 4 | — | — ✅ | Color a elección, 12V internos / 3.3V externos |
-| Transistor NPN 2N5551 | 2 | $165,55 | $331,10 | TO-92, 160V/600mA, reemplazo BC337 |
+| Transistor NPN 2N5551 | 2 | $165,55 | $331,10 | TO-92, 160V/600mA, reemplazo 2N5551 |
 | Resistencia 1kΩ | 2 | $165,55 | $331,10 | 1/4W, carbon film (base 2N5551) |
 | Resistencia 470Ω | 2 | $165,55 | $331,10 | 1/4W, carbon film (LED 12V colector) |
 | Resistencia 150Ω | 2 | $165,55 | $331,10 | 1/4W, carbon film (LED 3.3V serie) |
@@ -164,7 +164,7 @@ Todos los sonidos del sistema usan RTTTL (definidos en `melodies.h`):
 
 **Paneles internos (salón, vestíbulo)** — LED 12V transistorizado:
 ```
-UTP par 3 AZ ──┤1kΩ├── base BC337
+UTP par 3 AZ ──┤1kΩ├── base 2N5551
 UTP par 4 MR (12V) ──┤ resistor LED├── colector
 UTP par 4 BL/MR (GND) ── emisor
 ```
@@ -450,11 +450,11 @@ flowchart LR
     end
 
     subgraph LedDriver["💡 LED (ambos paneles)"]
-        R1[1kΩ] --> B[BC337 Base]
+        R1[1kΩ] --> B[2N5551 Base]
         AZ --> R1
-        B --> C[BC337 Colector]
+        B --> C[2N5551 Colector]
         P4MR --> R2[470Ω] --> C
-        E[BC337 Emisor] --> GND
+        E[2N5551 Emisor] --> GND
         C --> LED12["💡 LED 12V"]
         LED12 --> GND
     end
@@ -473,7 +473,7 @@ flowchart LR
 
 > **Panel de salón**: el buzzer lleva potenciómetro de 10kΩ en serie (reóstato) entre BL/AZ y el buzzer (+).
 > **Panel de vestíbulo**: el buzzer se conecta directamente entre BL/AZ y GND (sin pot).
-> Ambos paneles comparten el mismo circuito de LED (BC337 + 12V).
+> Ambos paneles comparten el mismo circuito de LED (2N5551 + 12V).
 
 ### 12.4 Circuito — Panel Externo (patio)
 
