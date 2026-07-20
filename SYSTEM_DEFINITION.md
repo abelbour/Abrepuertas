@@ -108,6 +108,7 @@ flowchart TB
 - GPIO13. INPUT_PULLUP. NA a GND.
 - **ON**: puerta abierta. **OFF**: puerta cerrada.
 - Si se activa con relé OFF → apertura por emergencia
+- **Al cerrar la puerta** (FC → OFF): si el LED está en flash lento (estado puerta abierta), vuelve a 25% reposo. No afecta al cooldown externo.
 
 ### 3.5 Buzzer Musical (RTTTL)
 - GPIO14 (PWM). Paralelo a todas las zonas.
@@ -115,7 +116,7 @@ flowchart TB
   - **RTTTL**: melodías de timbre (4 programables por el usuario en `melodies.h`)
   - **Control directo PWM**: pitidos de advertencia y alarma (generados por script)
 - Cada pulsación del timbre (externo) reproduce la siguiente melodía RTTTL en secuencia.
-- Al abrirse la puerta tras desbloqueo interno, el índice se resetea a la melodía 1.
+- Al terminar el cooldown del desbloqueo interno (doorbell_led_duration), si la puerta sigue abierta (FC=ON), el índice se resetea a la melodía 1.
 - Durante el desbloqueo suenan pitidos de advertencia (control directo PWM), no melodía.
 - La alarma de emergencia usa control directo PWM.
 
@@ -160,10 +161,15 @@ Transiciones:
 
 ```
 Al recibir final carrera = ON:
-  Si lock_relay_output está ON → desbloqueo normal
-  Si lock_relay_output está OFF → apertura no autorizada (pedal/forzada)
-     → emergency_alert
+  Si desbloqueo_normal_activo OR lock_relay_output está ON
+     → desbloqueo normal (stop flash_and_beep, relé OFF)
+  Si no
+     → apertura no autorizada (pedal/forzada) → emergency_alert
 ```
+
+El flag `desbloqueo_normal_activo` se pone a true al iniciar `unlock_gate`
+y se limpia al terminar. Así un FC ON que llegue justo después de apagar
+el relé no se confunde con emergencia.
 
 ## 6. Comportamiento
 
@@ -177,36 +183,45 @@ Al recibir final carrera = ON:
 | 🔹 Interno (ACTIVADO) | ON `unlock_duration` | Pitidos metro Londres | Flash rápido |
 | 🚪 Abierta tras desbloqueo | OFF | Pitido c/flash | Flash lento `gate_open_flash_interval` |
 | 🚪 Cerrada tras desbloqueo | OFF | — | 25% |
+| 🚪 FC → OFF (cierra) | — | — | Si estaba en flash lento → 25% |
 | 🚨 Emergencia (🚪ON + 🔒OFF) | — | Alarma 800/1200Hz | Fast Flash 10s |
 
 Mientras el sistema está DESACTIVADO el relé permanece ON y cualquier pulsación (externa o interna) es ignorada.
 Los pulsadores externos **nunca desbloquean** la puerta — solo tocan el timbre.
+El cooldown del pulsador externo es independiente del interno (cada uno con su bandera).
+Al cerrar la puerta (FC→OFF) el LED vuelve a 25% si estaba en flash lento.
 
 ## 7. Scripts
 
 ### 7.1 `external_press` (patio / exterior — timbre)
 ```
 1. Si sistema DESACTIVADO → salir
-2. Si LED no está en reposo (cooldown) → salir (ignorar)
-3. Cancelar timer_reset_melodia (si existe)
-4. Reproducir melodía actual (RTTTL, no bloqueante)
-5. LED → LATIDO SUAVE al 100%
-6. Esperar doorbell_led_duration
-7. LED → 25% (reposo)
-8. índice de melodía + 1
-9. Iniciar timer_reset_melodia (60s)
+2. Si cooldown_externo_activo → salir (ignorar)
+3. cooldown_externo_activo = true
+4. Cancelar timer_reset_melodia (si existe)
+5. Reproducir melodía actual (RTTTL, no bloqueante)
+6. LED → LATIDO SUAVE al 100%
+7. Esperar doorbell_led_duration
+8. LED → 25% (reposo)
+9. cooldown_externo_activo = false
+10. índice de melodía + 1
+11. Iniciar timer_reset_melodia (60s)
 ```
+
+El cooldown usa una bandera propia (`cooldown_externo_activo`), no el
+estado del LED. Así el externo y el interno son completamente independientes.
 
 Si transcurren 60s sin una nueva pulsación externa, el timer resetea
 el índice de melodía a 0. Si ocurre una nueva pulsación antes, el
-timer se cancela (paso 3) y se reinicia al final del cooldown (paso 9).
+timer se cancela (paso 4) y se reinicia al final del cooldown (paso 11).
 
 ### 7.2 `internal_press` (salón / vestíbulo — abrir puerta)
 ```
 1. Si sistema DESACTIVADO → salir
-2. Ejecutar unlock_gate
-3. Esperar doorbell_led_duration  (tiempo de bloqueo para nueva apertura)
-4.    Si final carrera = ON → LED → flash lento + pitido corto (gate_open_flash_interval)
+2. LED → Flash rápido
+3. Ejecutar unlock_gate
+4. Esperar doorbell_led_duration  (tiempo de bloqueo para nueva apertura)
+5.    Si final carrera = ON → LED → flash lento + pitido corto (gate_open_flash_interval)
                             índice de melodía → 0 (reseta playlist)
    Si no → LED → 25% (reposo)
 ```
@@ -216,11 +231,13 @@ y no comparte cooldown con el externo — son independientes.
 
 ### 7.3 `unlock_gate`
 ```
-1. Relé → ON
-2. Iniciar flash_and_beep (segundo plano)
-3. Esperar hasta: final carrera ON  O  unlock_duration
-4. Relé → OFF
-5. Detener flash_and_beep. Apagar buzzer.
+1. desbloqueo_normal_activo = true
+2. Relé → ON
+3. Iniciar flash_and_beep (segundo plano)
+4. Esperar hasta: final carrera ON  O  unlock_duration
+5. Relé → OFF
+6. Detener flash_and_beep. Apagar buzzer.
+7. desbloqueo_normal_activo = false
 ```
 
 > `unlock_gate` **no controla el LED**. El LED lo gestiona `internal_press`
@@ -295,8 +312,8 @@ Sin HA, API nativa ni MQTT.
 
 4 melodías en formato RTTTL. Cada pulsación del timbre externo
 reproduce la siguiente. Al llegar a la cuarta vuelve a la primera.
-El ciclo se resetea a la melodía 1 cuando el final de carrera detecta
-apertura tras desbloqueo interno.
+El ciclo se resetea a la melodía 1 al terminar el cooldown del
+desbloqueo interno si la puerta sigue abierta (FC=ON).
 
 | # | Código RTTTL |
 |---|--------------|
@@ -411,7 +428,6 @@ flowchart LR
     end
 
     subgraph Panel["🔸 Panel Externo"]
-        BLV --> R10k[10kΩ] --> Vcc[+3.3V<br/>pull-up]
         BLV --> Puls["🔸 Pulsador Ext<br/>NA"]
         Puls --> GND
 
@@ -423,6 +439,7 @@ flowchart LR
     end
 ```
 
+> El pull-up de 10kΩ a 3.3V para GPIO16 está en el **vestíbulo**, junto al MCU. El panel externo solo tiene el pulsador NA a GND.
 ### 11.5 Circuito — Cerradura + Pedal de Emergencia
 
 ```mermaid
@@ -501,7 +518,8 @@ flowchart TD
     subgraph MCU["🟩 MCU (Vestíbulo)"]
         A{"Sistema ACTIVADO?"}
         A -- No --> FIN_INT[Ignorar]
-        A -- Sí --> UNLOCK[Ejecutar unlock_gate]
+        A -- Sí --> LEDON[LED → Flash rápido]
+        LEDON --> UNLOCK[Ejecutar unlock_gate]
         UNLOCK --> COOLDOWN[Esperar doorbell_led_duration<br/>bloqueo para nueva apertura]
         COOLDOWN --> CHECK{FC = ON?}
         CHECK -- Sí --> RESET[Índice melodía → 0]
@@ -525,7 +543,7 @@ flowchart TD
     PULS --> A
     UNLOCK --> RELE
     UNLOCK --> BEEP
-    UNLOCK --> LED
+    LEDON --> LED
     RELE --> RELE2
     CHECK --> FC
     FC --> LED2
@@ -537,7 +555,8 @@ flowchart TD
 flowchart TD
     subgraph MCU["🟩 MCU (Vestíbulo)"]
         START[Inicio unlock_gate]
-        START --> RELAY_ON[Relé → ON]
+        START --> FLAG[desbloqueo_normal_activo = true]
+        FLAG --> RELAY_ON[Relé → ON]
         RELAY_ON --> FB[Iniciar flash_and_beep]
         FB --> LOOP{FC = ON?}
         LOOP -- No --> TIMEOUT{"¿Pasó unlock_duration?"}
@@ -546,6 +565,7 @@ flowchart TD
         LOOP -- Sí --> RELAY_OFF
         RELAY_OFF --> STOP[Detener flash_and_beep]
         STOP --> BUZZ_OFF[Apagar buzzer]
+        BUZZ_OFF --> UNFLAG[desbloqueo_normal_activo = false]
     end
 
     subgraph LOCK["🟪 PATIO"]
@@ -577,7 +597,7 @@ flowchart TD
     end
 
     subgraph MCU["🟩 MCU (Vestíbulo)"]
-        EVT{Relé = ON?}
+        EVT{desbloqueo_normal_activo<br/>O relé = ON?}
         EVT -- Sí --> NORMAL[Desbloqueo normal<br/>→ stop flash_and_beep<br/>→ Relé OFF]
         EVT -- No --> ALERT[Apertura no autorizada]
         ALERT --> EMERG[emergency_alert]
