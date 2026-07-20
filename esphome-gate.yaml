@@ -54,7 +54,7 @@ light:
           max_brightness: 100%
       - strobe:
           name: "Flash Rapido"
-          duration: 200ms
+          duration: 400ms
 
 rtttl:
   output: buzzer_output
@@ -247,11 +247,18 @@ script:
 
           unsigned long start = millis();
           unsigned long timeout = id(unlock_duration_ms);
-          unsigned long last_toggle = 0;
-          bool led_on = false;
+          unsigned long last_toggle = start;
+          bool led_on = true;
 
           // APERTURA = d=16,o=7,b=225:c,p,c,p,...
-          // 16th note at 225 BPM = 67ms
+          // 16th note at 225 BPM = 67ms. LED ON durante nota, OFF durante silencio.
+          {
+            auto call = id(led_light).make_call();
+            call.set_brightness(1.0f);
+            call.set_transition_length(0);
+            call.perform();
+          }
+
           while (!id(final_carrera).state && millis() - start < timeout) {
             unsigned long now = millis();
 
