@@ -114,11 +114,12 @@ flowchart TB
 - GPIO14 (PWM). Paralelo a todas las zonas.
 - Soporta dos modos:
   - **RTTTL**: melodías de timbre (4 programables por el usuario en `melodies.h`)
-  - **Control directo PWM**: pitidos de advertencia y alarma (generados por script)
+  - **RTTTL**: sonido de apertura (constante `APERTURA` en `melodies.h`)
+  - **RTTTL**: alarma de emergencia (constante `EMERGENCIA` en `melodies.h`)
 - Cada pulsación del timbre (externo) reproduce la siguiente melodía RTTTL en secuencia.
 - Al terminar el cooldown del desbloqueo interno (doorbell_led_duration), si la puerta sigue abierta (FC=ON), el índice se resetea a la melodía 1.
-- Durante el desbloqueo suenan pitidos de advertencia (control directo PWM), no melodía.
-- La alarma de emergencia usa control directo PWM.
+- Durante el desbloqueo suena el sonido RTTTL de apertura, no melodía.
+- La alarma de emergencia usa RTTTL.
 
 ### 3.6 LEDs Estado
 - GPIO12 PWM → UTP par 3 AZ. Señal común a las 4 zonas.
@@ -161,8 +162,8 @@ Transiciones:
 
 ```
 Al recibir final carrera = ON:
-  Si desbloqueo_normal_activo OR lock_relay_output está ON
-     → desbloqueo normal (stop flash_and_beep, relé OFF)
+  Si desbloqueo_normal_activo OR lock_relay está ON
+     → desbloqueo normal (relé OFF)
   Si no
      → apertura no autorizada (pedal/forzada) → emergency_alert
 ```
@@ -180,11 +181,11 @@ el relé no se confunde con emergencia.
 | 🔹 >4s (DESACT → ACTIVAR) | OFF | Secuencia activación | 3 flashes → 25% |
 | 🔹 >8s (ACTIV → DESACTIVAR) | ON (perm.) | Secuencia desactivación | 3 flashes → OFF |
 | 🔸 Externo (ACTIVADO) | — | Melodía actual | Latido 100% `doorbell_led_duration` |
-| 🔹 Interno (ACTIVADO) | ON `unlock_duration` | Pitidos metro Londres | Flash rápido |
+| 🔹 Interno (ACTIVADO) | ON `unlock_duration` | RTTTL Apertura | Flash rápido |
 | 🚪 Abierta tras desbloqueo | OFF | Pitido c/flash | Flash lento `gate_open_flash_interval` |
 | 🚪 Cerrada tras desbloqueo | OFF | — | 25% |
 | 🚪 FC → OFF (cierra) | — | — | Si estaba en flash lento → 25% |
-| 🚨 Emergencia (🚪ON + 🔒OFF) | — | Alarma 800/1200Hz ×5 | Fast Flash 5s |
+| 🚨 Emergencia (🚪ON + 🔒OFF) | — | RTTTL Emergencia (×4) | Fast Flash 5s |
 
 Mientras el sistema está DESACTIVADO el relé permanece ON y cualquier pulsación (externa o interna) es ignorada.
 Los pulsadores externos **nunca desbloquean** la puerta — solo tocan el timbre.
@@ -232,11 +233,11 @@ y no comparte cooldown con el externo — son independientes.
 ### 7.3 `unlock_gate`
 ```
 1. desbloqueo_normal_activo = true
-2. Relé → ON
-3. Iniciar flash_and_beep (segundo plano)
+2. Reproducir sonido de apertura (RTTTL Apertura)
+3. Relé → ON
 4. Esperar hasta: final carrera ON  O  unlock_duration
 5. Relé → OFF
-6. Detener flash_and_beep. Apagar buzzer.
+6. Detener RTTTL. Apagar buzzer.
 7. desbloqueo_normal_activo = false
 ```
 
@@ -244,25 +245,16 @@ y no comparte cooldown con el externo — son independientes.
 > (flash rápido durante desbloqueo, luego flash lento o 25% según estado de la puerta).
 
 ### 7.4 `flash_and_beep`
-Mientras `lock_relay_output` esté ON, reproduce el pitido de advertencia
-estilo **metro de Londres** (pitidos cortos que se aceleran):
+Reproduce el sonido de **apertura** (RTTTL) durante el desbloqueo:
 
 ```
-vuelta 1: beep · · · 400ms pausa
-vuelta 2: beep · · · 350ms pausa
-vuelta 3: beep · · · 300ms pausa
-vuelta 4: beep · · · 250ms pausa
-vuelta 5: beep · · · 200ms pausa
-vuelta 6: beep · · · 150ms pausa
-vuelta 7: beep · · · 100ms pausa
-vuelta 8: beep · · ·  75ms pausa
-... acelera hasta 50ms y se mantiene
+d=16,o=7,b=225:c,p,c,p,...  (pitidos rápidos, ~12s de duración)
 ```
 
-Cada "beep" = 80ms de tono PWM a ~980 Hz (B5). El ciclo se repite hasta que el relé se apaga.
-
-El LED no se ve afectado por este script — tras el desbloqueo
-`internal_press` se encarga del estado final del LED.
+El sonido se inicia junto con la activación del relé y se detiene al
+finalizar el desbloqueo (`unlock_gate`). El LED no se ve afectado por
+este script — tras el desbloqueo `internal_press` se encarga del
+estado final del LED.
 
 ### 7.5 `enable_system`
 ```
@@ -282,10 +274,14 @@ El LED no se ve afectado por este script — tras el desbloqueo
 
 ### 7.7 `emergency_alert`
 ```
-1. Alarma de emergencia (control directo PWM, tono alternado):
-   500ms a 800 Hz · 500ms a 1200 Hz · repetido 5 veces
-2. LED → FLASH RÁPIDO sincronizado con la alarma
-3. Tras alarma, si sigue abierta → flash lento + pitido (gate_open_flash_interval)
+1. Alarma de emergencia (RTTTL): se repite en bucle hasta 60s
+   d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p  (~4.8s cada ciclo)
+2. LED → 100% durante toda la alarma
+3. El bucle se corta si:
+   - Se presiona el pulsador interno (→ unlock_gate)
+   - La puerta se cierra (FC → OFF)
+4. Al terminar (bucle completo o corte):
+   Si sigue abierta → flash lento + pitido (gate_open_flash_interval)
    Si no → LED → 25% (reposo), silencio
 ```
 
@@ -541,7 +537,7 @@ flowchart TD
 
     subgraph PAN["🟧 TODAS LAS ZONAS"]
         LED[LED → Flash rápido]
-        BEEP[Pitidos metro Londres]
+        BEEP[RTTTL Apertura]
         LED2[LED → Flash lento + pitido]
     end
 
@@ -561,14 +557,14 @@ flowchart TD
     subgraph MCU["🟩 MCU (Vestíbulo)"]
         START[Inicio unlock_gate]
         START --> FLAG[desbloqueo_normal_activo = true]
-        FLAG --> RELAY_ON[Relé → ON]
-        RELAY_ON --> FB[Iniciar flash_and_beep]
-        FB --> LOOP{FC = ON?}
+        FLAG --> RTTTL[Reproducir RTTTL Apertura]
+        RTTTL --> RELAY_ON[Relé → ON]
+        RELAY_ON --> LOOP{FC = ON?}
         LOOP -- No --> TIMEOUT{"¿Pasó unlock_duration?"}
         TIMEOUT -- No --> LOOP
         TIMEOUT -- Sí --> RELAY_OFF[Relé → OFF]
         LOOP -- Sí --> RELAY_OFF
-        RELAY_OFF --> STOP[Detener flash_and_beep]
+        RELAY_OFF --> STOP[Detener RTTTL]
         STOP --> BUZZ_OFF[Apagar buzzer]
         BUZZ_OFF --> UNFLAG[desbloqueo_normal_activo = false]
     end
@@ -581,14 +577,14 @@ flowchart TD
     end
 
     subgraph PAN["🟧 TODAS LAS ZONAS"]
-        BEEP[Pitido metro Londres<br/>acelerando]
+        BEEP[RTTTL Apertura sonando]
         SILENCIO[Buzzer OFF]
     end
 
     RELAY_ON --> RELE
     RELAY_OFF --> RELE2
     FC --> LOOP
-    FB --> BEEP
+    RTTTL --> BEEP
     STOP --> SILENCIO
 ```
 
@@ -603,11 +599,11 @@ flowchart TD
 
     subgraph MCU["🟩 MCU (Vestíbulo)"]
         EVT{desbloqueo_normal_activo<br/>O relé = ON?}
-        EVT -- Sí --> NORMAL[Desbloqueo normal<br/>→ stop flash_and_beep<br/>→ Relé OFF]
+        EVT -- Sí --> NORMAL[Desbloqueo normal<br/>→ Relé OFF]
         EVT -- No --> ALERT[Apertura no autorizada]
         ALERT --> EMERG[emergency_alert]
-        EMERG --> ALARM[Alarma tono alternado<br/>800/1200Hz × 5 ciclos]
-        ALARM --> FLASH[LED flash rápido 10s]
+        EMERG --> ALARM[RTTTL Emergencia<br/>4 ciclos tono grave + pausa]
+        ALARM --> FLASH[LED → 100% ~4.8s]
         FLASH --> CHECK{¿Sigue abierta?}
         CHECK -- Sí --> SLOW[Flash lento + pitido<br/>gate_open_flash_interval]
         CHECK -- No --> SILENT[LED → 25%. Silencio]

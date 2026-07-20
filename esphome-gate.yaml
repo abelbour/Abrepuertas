@@ -116,6 +116,7 @@ binary_sensor:
             }
     on_release:
       then:
+        - script.stop: emergency_alert_script
         - script.stop: gate_open_flash_script
         - light.turn_on:
             id: led_light
@@ -139,12 +140,6 @@ globals:
   - id: unlock_duration_ms
     type: int
     initial_value: '5000'
-  - id: beep_pause
-    type: int
-    initial_value: '400'
-  - id: beep_step
-    type: int
-    initial_value: '0'
   - id: emergency_cycle
     type: int
     initial_value: '0'
@@ -222,6 +217,7 @@ script:
           condition:
             lambda: 'return id(system_active);'
           then:
+            - script.stop: emergency_alert_script
             - light.turn_on:
                 id: led_light
                 effect: "Flash Rapido"
@@ -246,37 +242,16 @@ script:
       - lambda: 'id(desbloqueo_normal_activo) = true;'
       - rtttl.stop: buzzer_rtttl
       - output.turn_off: buzzer_output
+      - rtttl.play: !lambda 'return std::string(APERTURA);'
       - output.turn_on: lock_relay
-      - script.execute: flash_and_beep_script
       - wait_until:
           condition:
             lambda: 'return id(final_carrera).state;'
           timeout: !lambda 'return id(unlock_duration_ms);'
       - output.turn_off: lock_relay
-      - script.stop: flash_and_beep_script
       - rtttl.stop: buzzer_rtttl
       - output.turn_off: buzzer_output
       - lambda: 'id(desbloqueo_normal_activo) = false;'
-
-  - id: flash_and_beep_script
-    mode: single
-    then:
-      - lambda: 'id(beep_step) = 0;'
-      - while:
-          condition:
-            lambda: 'return id(lock_relay).state;'
-          then:
-            - output.ledc.write:
-                id: buzzer_output
-                frequency: 980Hz
-                duty: 0.5
-            - delay: 80ms
-            - output.turn_off: buzzer_output
-            - lambda: |-
-                int pauses[] = {400, 350, 300, 250, 200, 150, 100, 75, 50};
-                id(beep_pause) = pauses[id(beep_step)];
-                if (id(beep_step) < 8) id(beep_step)++;
-            - delay: !lambda 'return id(beep_pause);'
 
   - id: enable_system_script
     mode: single
@@ -332,28 +307,19 @@ script:
   - id: emergency_alert_script
     mode: single
     then:
+      - rtttl.stop: buzzer_rtttl
+      - output.turn_off: buzzer_output
       - lambda: 'id(emergency_cycle) = 0;'
       - while:
           condition:
-            lambda: 'return id(emergency_cycle) < 5;'
+            lambda: 'return id(emergency_cycle) < 12 && id(final_carrera).state;'
           then:
-            - output.ledc.write:
-                id: buzzer_output
-                frequency: 800Hz
-                duty: 0.5
+            - rtttl.play: !lambda 'return std::string(EMERGENCIA);'
             - light.turn_on:
                 id: led_light
                 brightness: 100%
                 transition_length: 0s
-            - delay: 500ms
-            - output.ledc.write:
-                id: buzzer_output
-                frequency: 1200Hz
-                duty: 0.5
-            - light.turn_off:
-                id: led_light
-                transition_length: 0s
-            - delay: 500ms
+            - delay: 4800ms
             - lambda: 'id(emergency_cycle)++;'
       - output.turn_off: buzzer_output
       - lambda: |-
