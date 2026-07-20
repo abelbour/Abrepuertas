@@ -25,29 +25,30 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 
 ## 2. Lista de Materiales
 
-| # | Componente | Cant. | Precio | Especificación | Ubicación |
-|---|-----------|:-----:|:-----:|----------------|-----------|
-| 1 | NodeMCU ESP8266 | 1 | $11.106,90 | ESP-12E, CP2102, microUSB | Vestíbulo |
-| 2 | Fuente 5V | 1 | $9.315,95 | 5V DC, ≥1A, tipo cargador USB | Vestíbulo |
-| 3 | Fuente 12V | 1 | $13.349,35 | 12V DC, ≥2A, tipo brick | Vestíbulo |
-| 4 | Relé NC | 1 | $1.444,80 | Módulo relé 1 canal, 5V bobina, 10A/250V contacto | Vestíbulo |
-| 5 | Cerradura Magnética | 1 | $69.786,85 | 12V, tipo ML-1501 o similar, ≤1.5A | Patio |
-| 6 | Final de Carrera | 1 | $1.730,75 | NA (normalmente abierto), tipo microswitch con rodillo | Patio |
-| 7 | Pedal de Emergencia | 1 | — | NC (normalmente cerrado), tipo pedal metálico o interruptor de pie | Patio |
-| 8 | Buzzer piezoeléctrico | 3 | $842,80 | Zumbador piezo sin oscilador, 3–24V, tipo 2312 o similar | Salón / Vest. / Patio |
-| 9 | Pulsador NA (interno) | 2 | $466,55 | Pulsador momentáneo NA, tipo campana o táctil | Salón / Vestíbulo |
-| 10 | Pulsador NA (externo) | 2 | — | Pulsador momentáneo NA, tipo timbre estanco IP54 | Patio / Exterior |
-| 11 | LED 5mm | 4 | — | Color a elección, 12V internos, 3.3V externos | 1 por panel |
-| 12 | Transistor NPN BC337 | 2 | — | TO-92, 45V/800mA | Salón / Vestíbulo |
-| 13 | Resistencia 1kΩ | 2 | $165,55 | 1/4W, carbon film | Salón / Vestíbulo (base BC337) |
-| 14 | Resistencia 470Ω | 2 | $165,55 | 1/4W, carbon film | Salón / Vestíbulo (LED 12V colector) |
-| 15 | Resistencia 150Ω | 2 | $165,55 | 1/4W, carbon film | Patio / Exterior (LED 3.3V serie) |
-| 16 | Resistencia 10kΩ | 1 | $165,55 | 1/4W, carbon film | Vestíbulo (pull-up GPIO16) |
-| 17 | Potenciómetro 10kΩ | 1 | $2.091,95 | Lineal, tipo reóstato, 6mm, ejey 15mm | Salón (volumen buzzer) |
-| 18 | Cable UTP Cat5 (x 1m) | 1 | $406,35 | 4 pares, sólido, CCA o cobre, largo según distancia | Entre todas las zonas |
-| 19 | Placa perforada 50×50mm | 1 | $918,05 | 7×5 cm o similar | Vestíbulo (montaje MCU) |
-| 20 | Cables dupont H-H 40P 20cm | — | $2.648,80 | Varios, 22AWG | Conexiones locales en cada panel |
-| | **Total** | | **$117.420,10** | (16 cotizados, 4 pendientes) | |
+| # | Componente | Cant. | Precio Unit. | Subtotal | Marca | Especificación | Ubicación |
+|---|-----------|:-----:|:-----------:|:--------:|:-----:|----------------|-----------|
+| 1 | NodeMCU ESP8266 | 1 | $11.106,90 | $11.106,90 | ✔ Tenemos | ESP-12E, CP2102, microUSB | Vestíbulo |
+| 2 | Fuente 5V | 1 | $9.315,95 | $9.315,95 | | 5V DC, ≥1A, tipo cargador USB | Vestíbulo |
+| 3 | Fuente 12V | 1 | $13.349,35 | $13.349,35 | | 12V DC, ≥2A, tipo brick | Vestíbulo |
+| 4 | Relé NC | 1 | $1.444,80 | $1.444,80 | | Módulo relé 1 canal, 5V bobina, 10A/250V contacto | Vestíbulo |
+| 5 | Cerradura Magnética | 1 | $69.786,85 | $69.786,85 | ✔ Tenemos | 12V, tipo ML-1501 o similar, ≤1.5A | Patio |
+| 6 | Final de Carrera | 1 | $1.730,75 | $1.730,75 | | NA, microswitch con rodillo | Patio |
+| 7 | Pedal de Emergencia | 1 | — | — | | NC, pedal metálico o interruptor de pie | Patio |
+| 8 | Buzzer piezoeléctrico | 3 | $842,80 | $2.528,40 | | Zumbador piezo 3–24V, tipo 2312 | Salón / Vest. / Patio |
+| 9 | Pulsador NA (interno) | 2 | $466,55 | $933,10 | ✔ Tenemos | Pulsador momentáneo NA, tipo campana | Salón / Vestíbulo |
+| 10 | Pulsador NA (externo) | 2 | — | — | ✔ Tenemos | Pulsador momentáneo NA, estanco IP54 | Patio / Exterior |
+| 11 | LED 5mm | 4 | — | — | | Color a elección, 12V internos / 3.3V externos | 1 por panel |
+| 12 | Transistor NPN BC337 | 2 | — | — | | TO-92, 45V/800mA | Salón / Vestíbulo |
+| 13 | Resistencia 1kΩ | 2 | $165,55 | $331,10 | | 1/4W, carbon film | Salón / Vestíbulo (base BC337) |
+| 14 | Resistencia 470Ω | 2 | $165,55 | $331,10 | | 1/4W, carbon film | Salón / Vestíbulo (LED 12V colector) |
+| 15 | Resistencia 150Ω | 2 | $165,55 | $331,10 | | 1/4W, carbon film | Patio / Exterior (LED 3.3V serie) |
+| 16 | Resistencia 10kΩ | 1 | $165,55 | $165,55 | | 1/4W, carbon film | Vestíbulo (pull-up GPIO16) |
+| 17 | Potenciómetro 10kΩ | 1 | $2.091,95 | $2.091,95 | | Lineal, reóstato, 6mm | Salón (volumen buzzer) |
+| 18 | Cable UTP Cat5 (x 1m) | 1 | $406,35 | $406,35 | ✔ Tenemos | 4 pares, sólido, CCA o cobre | Entre todas las zonas |
+| 19 | Placa perforada 50×50mm | 1 | $918,05 | $918,05 | | 7×5 cm o similar | Vestíbulo (montaje MCU) |
+| 20 | Cables dupont H-H 40P 20cm | — | $2.648,80 | $2.648,80 | ✔ Tenemos | Varios, 22AWG | Conexiones locales |
+| | **Total general** | | | **$117.420,10** | | (16 cotizados, 4 pendientes) | |
+| | **Subtotal a comprar** | | | **$32.538,10** | | (excluye ✔ Tenemos) | |
 
 ## Distribución Física
 
