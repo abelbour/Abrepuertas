@@ -27,28 +27,28 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 
 | Componente | Cant. | Precio Unit. | Subtotal | Especificación |
 |-----------|:-----:|:-----------:|:--------:|----------------|
-| NodeMCU ESP8266 | 1 | $11.106,90 | $11.106,90 ✔ Tenemos | ESP-12E, CP2102, microUSB |
+| NodeMCU ESP8266 | 1 | $11.106,90 | $11.106,90 ✅ | ESP-12E, CP2102, microUSB |
 | Fuente 5V | 1 | $9.315,95 | $9.315,95 | 5V DC, ≥1A, tipo cargador USB |
 | Fuente 12V | 1 | $13.349,35 | $13.349,35 | 12V DC, ≥2A, tipo brick |
 | Relé NC | 1 | $1.444,80 | $1.444,80 | Módulo relé 1 canal, 5V bobina, 10A/250V contacto |
-| Cerradura Magnética | 1 | $69.786,85 | $69.786,85 ✔ Tenemos | 12V, tipo ML-1501 o similar, ≤1.5A |
+| Cerradura Magnética | 1 | $69.786,85 | $69.786,85 ✅ | 12V, tipo ML-1501 o similar, ≤1.5A |
 | Final de Carrera | 1 | $1.730,75 | $1.730,75 | NA, microswitch con rodillo |
-| Pedal de Emergencia | 1 | — | — | NC, pedal metálico o interruptor de pie |
+| Pedal de Emergencia | 1 | — | — ✅ | Fabricado con pulsador NA (usar existente) |
 | Buzzer piezoeléctrico | 3 | $842,80 | $2.528,40 | Zumbador piezo 3–24V, tipo 2312 |
-| Pulsador NA (interno) | 2 | $466,55 | $933,10 ✔ Tenemos | Pulsador momentáneo NA, tipo campana |
-| Pulsador NA (externo) | 2 | — | — ✔ Tenemos | Pulsador momentáneo NA, estanco IP54 |
-| LED 5mm | 4 | — | — | Color a elección, 12V internos / 3.3V externos |
+| Pulsador NA (interno) | 2 | $466,55 | $933,10 ✅ | Pulsador momentáneo NA, tipo campana |
+| Pulsador NA (externo) | 2 | — | — ✅ | Pulsador momentáneo NA, estanco IP54 |
+| LED 5mm | 4 | — | — ✅ | Color a elección, 12V internos / 3.3V externos |
 | Transistor NPN 2N5551 | 2 | $165,55 | $331,10 | TO-92, 160V/600mA, reemplazo BC337 |
 | Resistencia 1kΩ | 2 | $165,55 | $331,10 | 1/4W, carbon film (base 2N5551) |
 | Resistencia 470Ω | 2 | $165,55 | $331,10 | 1/4W, carbon film (LED 12V colector) |
 | Resistencia 150Ω | 2 | $165,55 | $331,10 | 1/4W, carbon film (LED 3.3V serie) |
 | Resistencia 10kΩ | 1 | $165,55 | $165,55 | 1/4W, carbon film (pull-up GPIO16) |
 | Potenciómetro 10kΩ | 1 | $2.091,95 | $2.091,95 | Lineal, reóstato, 6mm |
-| Cable UTP Cat5 (x 1m) | 1 | $406,35 | $406,35 ✔ Tenemos | 4 pares, sólido, CCA o cobre |
+| Cable UTP Cat5 (x 1m) | 1 | $406,35 | $406,35 ✅ | 4 pares, sólido, CCA o cobre |
 | Placa perforada 50×50mm | 1 | $918,05 | $918,05 | 7×5 cm o similar |
-| Cables dupont H-H 40P 20cm | — | $2.648,80 | $2.648,80 ✔ Tenemos | Varios, 22AWG |
-| **Total general** | | | **$117.751,20** | (17 cotizados, 3 pendientes) |
-| **Subtotal a comprar** | | | **$32.869,20** | (excluye ✔ Tenemos) |
+| Cables dupont H-H 40P 20cm | — | $2.648,80 | $2.648,80 ✅ | Varios, 22AWG |
+| **Total general** | | | **$117.751,20** | (17 cotizados, todos cubiertos) |
+| **Subtotal a comprar** | | | **$32.869,20** | (excluye ✅) |
 
 ## Distribución Física
 
