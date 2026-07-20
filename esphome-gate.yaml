@@ -2,6 +2,12 @@ esphome:
   name: esphome-gate
   platform: ESP8266
   board: nodemcuv2
+  includes:
+    - melodies.h
+  on_boot:
+    priority: 600
+    then:
+      - output.turn_on: lock_relay
 
 wifi:
   ssid: !secret wifi_ssid
@@ -59,6 +65,7 @@ binary_sensor:
     pin:
       number: GPIO4
       inverted: true
+      mode: INPUT_PULLUP
     id: pulsador_interno
     name: "Pulsador Interno"
     filters:
@@ -72,17 +79,12 @@ binary_sensor:
                 id(internal_press_script).execute();
               }
       - min_length: 4100ms
-        max_length: 7900ms
+        max_length: 60000ms
         then:
           - lambda: |-
               if (!id(system_active)) {
                 id(enable_system_script).execute();
-              }
-      - min_length: 8100ms
-        max_length: 60000ms
-        then:
-          - lambda: |-
-              if (id(system_active)) {
+              } else if (x > 8000) {
                 id(disable_system_script).execute();
               }
 
@@ -143,15 +145,15 @@ globals:
   - id: beep_step
     type: int
     initial_value: '0'
-  - id: melodies
-    type: std::vector<std::string>
-    initial_value: |-
-      {
-        "mel1:d=4,o=4,b=100:a,8c5,8c5,1g,a,c5,b,a,2g",
-        "mel2:d=4,o=4,b=100:f,a,c5,2g,a,c5,b,a,2g",
-        "mel3:d=4,o=4,b=100:g,g,2a,a,g,f,g,2e",
-        "mel4:d=4,o=4,b=100:8p,8a,b,c5,c5,b,a,g,a,8g,8f,16e,16d,8c"
-      }
+  - id: emergency_cycle
+    type: int
+    initial_value: '0'
+  - id: doorbell_led_duration_ms
+    type: int
+    initial_value: '45000'
+  - id: gate_open_flash_interval_ms
+    type: int
+    initial_value: '5000'
 
 number:
   - platform: template
@@ -164,7 +166,9 @@ number:
     id: doorbell_led_duration
     optimistic: true
     set_action:
-      - lambda: 'id(doorbell_led_duration).publish_state(x);'
+      - lambda: |-
+          id(doorbell_led_duration).publish_state(x);
+          id(doorbell_led_duration_ms) = int(x * 1000);
   - platform: template
     name: "Gate Open Flash Interval"
     min_value: 1
@@ -175,7 +179,9 @@ number:
     id: gate_open_flash_interval
     optimistic: true
     set_action:
-      - lambda: 'id(gate_open_flash_interval).publish_state(x);'
+      - lambda: |-
+          id(gate_open_flash_interval).publish_state(x);
+          id(gate_open_flash_interval_ms) = int(x * 1000);
 
 timer:
   - id: timer_reset_melodia
@@ -195,12 +201,12 @@ script:
             - lambda: 'id(cooldown_externo_activo) = true;'
             - timer.cancel: timer_reset_melodia
             - output.turn_off: buzzer_output
-            - lambda: 'id(buzzer_rtttl)->play(id(melodies)[id(melody_index)]);'
+            - rtttl.play: !lambda 'return std::string(ALL_MELODIES[id(melody_index)]);'
             - light.turn_on:
                 id: led_light
                 effect: "Latido Suave"
                 brightness: 100%
-            - delay: !lambda 'return int(id(doorbell_led_duration).state * 1000);'
+            - delay: !lambda 'return id(doorbell_led_duration_ms);'
             - light.turn_on:
                 id: led_light
                 brightness: 25%
@@ -222,20 +228,24 @@ script:
                 brightness: 100%
             - output.turn_off: buzzer_output
             - script.execute: unlock_gate_script
-            - delay: !lambda 'return int(id(doorbell_led_duration).state * 1000);'
+            - delay: !lambda 'return id(doorbell_led_duration_ms);'
             - lambda: |-
                 if (id(final_carrera).state) {
                   id(melody_index) = 0;
                   id(gate_open_flash_script).execute();
                 } else {
-                  id(led_light).turn_on();
-                  id(led_light).set_brightness(0.25);
+                  auto call = id(led_light).make_call();
+                  call.set_brightness(0.25);
+                  call.set_transition_length(1000);
+                  call.perform();
                 }
 
   - id: unlock_gate_script
     mode: single
     then:
       - lambda: 'id(desbloqueo_normal_activo) = true;'
+      - rtttl.stop: buzzer_rtttl
+      - output.turn_off: buzzer_output
       - output.turn_on: lock_relay
       - script.execute: flash_and_beep_script
       - wait_until:
@@ -322,27 +332,42 @@ script:
   - id: emergency_alert_script
     mode: single
     then:
-      - lambda: |-
-          for (int i = 0; i < 5; i++) {
-            id(buzzer_output)->turn_on();
-            id(buzzer_output)->set_frequency(800);
-            id(led_light).turn_on();
-            id(led_light).set_brightness(1.0);
-            delay(500);
-            id(buzzer_output)->set_frequency(1200);
-            delay(500);
-          }
-          id(buzzer_output)->turn_off();
+      - lambda: 'id(emergency_cycle) = 0;'
+      - while:
+          condition:
+            lambda: 'return id(emergency_cycle) < 5;'
+          then:
+            - output.ledc.write:
+                id: buzzer_output
+                frequency: 800Hz
+                duty: 0.5
+            - light.turn_on:
+                id: led_light
+                brightness: 100%
+                transition_length: 0s
+            - delay: 500ms
+            - output.ledc.write:
+                id: buzzer_output
+                frequency: 1200Hz
+                duty: 0.5
+            - light.turn_off:
+                id: led_light
+                transition_length: 0s
+            - delay: 500ms
+            - lambda: 'id(emergency_cycle)++;'
+      - output.turn_off: buzzer_output
       - lambda: |-
           if (id(final_carrera).state) {
             id(gate_open_flash_script).execute();
           } else {
-            id(led_light).turn_on();
-            id(led_light).set_brightness(0.25);
+            auto call = id(led_light).make_call();
+            call.set_brightness(0.25);
+            call.set_transition_length(1000);
+            call.perform();
           }
 
   - id: gate_open_flash_script
-    mode: parallel
+    mode: single
     then:
       - while:
           condition:
@@ -361,4 +386,4 @@ script:
                 id: led_light
                 transition_length: 0s
             - output.turn_off: buzzer_output
-            - delay: !lambda 'return int(id(gate_open_flash_interval).state * 1000) - 100;'
+            - delay: !lambda 'return id(gate_open_flash_interval_ms) - 100;'

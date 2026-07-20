@@ -99,7 +99,7 @@ flowchart TB
 - Pulsaciones largas ignoradas (solo el panel de control interno tiene función de mantenimiento)
 
 ### 3.3 Relé
-- GPIO5. **ID**: `lock_relay_output`
+- GPIO5. **ID**: `lock_relay`
 - **OFF** → NC cerrado → cerradura recibe 12V → puerta cerrada
 - **ON** → NC abierto → cerradura pierde 12V → puerta desbloqueada
 - NA no se usa
@@ -184,7 +184,7 @@ el relé no se confunde con emergencia.
 | 🚪 Abierta tras desbloqueo | OFF | Pitido c/flash | Flash lento `gate_open_flash_interval` |
 | 🚪 Cerrada tras desbloqueo | OFF | — | 25% |
 | 🚪 FC → OFF (cierra) | — | — | Si estaba en flash lento → 25% |
-| 🚨 Emergencia (🚪ON + 🔒OFF) | — | Alarma 800/1200Hz | Fast Flash 10s |
+| 🚨 Emergencia (🚪ON + 🔒OFF) | — | Alarma 800/1200Hz ×5 | Fast Flash 5s |
 
 Mientras el sistema está DESACTIVADO el relé permanece ON y cualquier pulsación (externa o interna) es ignorada.
 Los pulsadores externos **nunca desbloquean** la puerta — solo tocan el timbre.
@@ -259,7 +259,7 @@ vuelta 8: beep · · ·  75ms pausa
 ... acelera hasta 50ms y se mantiene
 ```
 
-Cada "beep" = 80ms de tono PWM a ~1000 Hz. El ciclo se repite hasta que el relé se apaga.
+Cada "beep" = 80ms de tono PWM a ~980 Hz (B5). El ciclo se repite hasta que el relé se apaga.
 
 El LED no se ve afectado por este script — tras el desbloqueo
 `internal_press` se encarga del estado final del LED.
@@ -324,7 +324,7 @@ desbloqueo interno si la puerta sigue abierta (FC=ON).
 | Apertura | `d=16,o=7,b=225:c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c`|
 | Emergencia | `d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p` |
 
-Las cadenas se definen como constantes en el YAML (mediante `globals` o lambdas).
+Las cadenas se definen en `melodies.h` como `static const char[] PROGMEM` para ahorrar RAM en el ESP8266.
 
 ## 11. Diagramas
 
