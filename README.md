@@ -36,8 +36,8 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | Pedal de Emergencia | 1 | — | — ✅ | Fabricado con pulsador NA (usar existente) |
 | [Buzzer 12V miniatura](https://tienda.lega.ar/producto/buz12-buzzer-miniatura-12v) | 3 | $1.143,80 | $3.431,40 | Buzzer piezoeléctrico 12V, 20mm |
 | [Pulsador NA (interno)](https://tienda.lega.ar/producto/pls930--pulsador-cuadrado-na) | 2 | $466,55 | $933,10 ✅ | Pulsador momentáneo NA, tipo campana |
-| [Pulsador NA (externo)](https://tienda.lega.ar/producto/pfpsz-pulsador-frente-portero-l-nueva) | 2 | $6.742,40 | $6.742,40 ✅ | Pulsador momentáneo NA, estanco IP54 |
-| LED 5mm (externos) | 2 | — | — ✅ | 3.3V, patios y exterior |
+| [Pulsador NA (externo)](https://tienda.lega.ar/producto/pfpsz-pulsador-frente-portero-l-nueva) | 2 | $6.742,40 | $13.484,80 ✅ | Pulsador frente portero, estanco IP54, timbre exterior |
+| [LED 5mm Azul Extra Alta](https://tienda.lega.ar/producto/led-5-mm-azul-extra-alta-ef-ea5az) | 2 | $406,35 | $812,70 | 5mm azul, extra alta luminosidad, patios y exterior |
 | Tira LED 12V (internos) | 2 | — | — ✅ | RGB o blanco, ~30cm, con resistor serie incorporado |
 | [Transistor NPN 2N5551](https://tienda.lega.ar/producto/2n5551-transistor-npn-160v-600-ma-625mw) | 5 | $165,55 | $827,75 | TO-92, 160V/600mA (2 LED + 3 buzzer) |
 | [Resistencia 1kΩ](https://tienda.lega.ar/producto/res0251k-resistencia-025-w-1k-ohms) | 5 | $165,55 | $827,75 | 1/4W, carbon film (base 2N5551) |
@@ -47,8 +47,8 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | [Cable UTP Cat5 (x 1m)](https://tienda.lega.ar/producto/cable-utp-interior-cat5-x-metro-5e100-) | 1 | $406,35 | $406,35 ✅ | 4 pares, sólido, CCA o cobre |
 | [Placa perforada 50×50mm](https://tienda.lega.ar/producto/50x50--plaqueta-simple-faz-50x50-fenolico) | 1 | $918,05 | $918,05 | 7×5 cm o similar |
 | [Cables dupont H-H 40P 20cm](https://tienda.lega.ar/producto/chh20-cable-dupont-hembra-hembra-40p-20-cm-) | — | $2.648,80 | $2.648,80 ✅ | Varios, 22AWG |
-| **Total general** | | | **$119.316,40** | (19 cotizados, todos cubiertos) |
-| **Subtotal a comprar** | | | **$34.434,40** | (excluye ✅) |
+| **Total general** | | | **$126.871,50** | (20 cotizados, todos cubiertos) |
+| **Subtotal a comprar** | | | **$35.247,10** | (excluye ✅) |
 
 ## Distribución Física
 
