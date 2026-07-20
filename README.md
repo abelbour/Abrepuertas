@@ -34,9 +34,9 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | [Cerradura Magnética](https://tienda.lega.ar/producto/em300-cerradura-electromagnetica) | 1 | $69.786,85 | $69.786,85 ✅ | 12V, tipo ML-1501 o similar, ≤1.5A |
 | [Final de Carrera](https://tienda.lega.ar/producto/mcw1-microswitch-mcw1-22mmx10mm-crueda) | 1 | $1.730,75 | $1.730,75 | NA, microswitch con rodillo |
 | Pedal de Emergencia | 1 | — | — ✅ | Fabricado con pulsador NA (usar existente) |
-| [Buzzer piezoeléctrico](https://tienda.lega.ar/producto/fya20t-piezo-electrico-buzzer-20-mm-75-khz) | 3 | $842,80 | $2.528,40 | Zumbador piezo 3–24V, tipo 2312 |
+| [Buzzer piezoeléctrico](https://tienda.lega.ar/producto/buz3-buzzer-miniatura-3v) | 3 | $842,80 | $2.528,40 | Zumbador piezo 3–24V, tipo 2312 |
 | [Pulsador NA (interno)](https://tienda.lega.ar/producto/pls930--pulsador-cuadrado-na) | 2 | $466,55 | $933,10 ✅ | Pulsador momentáneo NA, tipo campana |
-| Pulsador NA (externo) | 2 | — | — ✅ | Pulsador momentáneo NA, estanco IP54 |
+| [Pulsador NA (externo)](https://tienda.lega.ar/producto/pfpsz-pulsador-frente-portero-l-nueva) | 2 | $6.742,40 | $6.742,40 ✅ | Pulsador momentáneo NA, estanco IP54 |
 | LED 5mm (externos) | 2 | — | — ✅ | 3.3V, patios y exterior |
 | Tira LED 12V (internos) | 2 | — | — ✅ | RGB o blanco, ~30cm, con resistor serie incorporado |
 | [Transistor NPN 2N5551](https://tienda.lega.ar/producto/2n5551-transistor-npn-160v-600-ma-625mw) | 2 | $165,55 | $331,10 | TO-92, 160V/600mA, reemplazo 2N5551 |
