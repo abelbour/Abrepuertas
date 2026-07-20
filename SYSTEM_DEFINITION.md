@@ -54,41 +54,29 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 flowchart LR
     subgraph Salon["🏠 SALÓN"]
         direction TB
-        S_Btn["🔹 Pulsador Int<br/>GPIO4"]
-        S_Led["💡 LED 12V<br/>GPIO12"]
-        S_Buz["🔊 Buzzer + pot<br/>GPIO14"]
+        SP["Panel de control<br/>─────────<br/>🔹 Pulsador Int (GPIO4)<br/>💡 LED 12V (GPIO12)<br/>🔊 Buzzer + pot (GPIO14)"]
     end
 
     subgraph Vestibulo["📍 VESTÍBULO"]
         direction TB
-        V_Mcu["🧠 NodeMCU<br/>5V · 12V · Relé NC"]
-        V_Btn["🔹 Pulsador Int<br/>GPIO4"]
-        V_Led["💡 LED 12V<br/>GPIO12"]
-        V_Buz["🔊 Buzzer<br/>GPIO14"]
-        V_Ext["🔸 Pulsador Ext<br/>GPIO16"]
+        MCU["Módulo MCU<br/>─────────<br/>🧠 NodeMCU ESP8266<br/>⚡ Fuente 5V<br/>⚡🔒 Fuente 12V<br/>🔒 Relé NC"]
+        VP["Panel de control<br/>─────────<br/>🔹 Pulsador Int (GPIO4)<br/>💡 LED 12V (GPIO12)<br/>🔊 Buzzer (GPIO14)"]
     end
 
     subgraph Patio["🚪 PATIO"]
         direction TB
-        P_Ext["🔸 Pulsador Ext<br/>GPIO16"]
-        P_Led["💡 LED 3V<br/>GPIO12"]
-        P_Buz["🔊 Buzzer<br/>GPIO14"]
-        P_FC["🚪 Final Carrera<br/>GPIO13"]
-        P_Lock["🔒 Cerradura 12V<br/>+ 🚫 Pedal NC"]
+        PP["Panel de timbre<br/>─────────<br/>🔸 Pulsador Ext (GPIO16)<br/>💡 LED 3V (GPIO12)<br/>🔊 Buzzer (GPIO14)"]
+        PED["🚫 Pedal Emergencia (NC)"]
+        LK["🔒 Cerradura 12V<br/>🚪 Final Carrera (GPIO13)"]
     end
 
     subgraph Exterior["🌳 EXTERIOR"]
         direction TB
-        E_Ext["🔸 Pulsador Ext<br/>GPIO16"]
-        E_Led["💡 LED 3V<br/>GPIO12"]
+        EP["Panel de timbre<br/>─────────<br/>🔸 Pulsador Ext (GPIO16)<br/>💡 LED 3V (GPIO12)"]
     end
 
-    S_Btn --- V_Btn
-    S_Led --- V_Led --- P_Led --- E_Led
-    S_Buz --- V_Buz --- P_Buz
-    V_Ext --- P_Ext --- E_Ext
-    V_Mcu --- P_FC
-    V_Mcu --- P_Lock
+    Salon ---|UTP Cat5| Vestibulo ---|UTP Cat5| Patio ---|UTP Cat5| Exterior
+    MCU -.-> VP
 ```
 
 ## Cableado (UTP Cat5, 4 pares)
