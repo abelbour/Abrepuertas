@@ -321,6 +321,8 @@ desbloqueo interno si la puerta sigue abierta (FC=ON).
 | 2 | `d=8,o=6,b=140:c,g,c7,4c7,16c7,16p,b,c7,g,2g,p` |
 | 3 | `d=4,o=4,b=100:c7,b,2a,16a,16p,a,d7,b,2g,p` |
 | 4 | `d=4,o=4,b=100:a,b,c7,g,f,e,g,4d,16d,16p,c,2c,p` |
+| Apertura | `d=16,o=7,b=225:c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c`|
+| Emergencia | `d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p` |
 
 Las cadenas se definen como constantes en el YAML (mediante `globals` o lambdas).
 
