@@ -303,18 +303,18 @@ el LED vuelve a 25% y `internal_press` gestiona el estado final.
 ### 8.5 `enable_system`
 ```
 1. Sistema → ACTIVADO
-2. Reproducir secuencia ascendente (RTTTL ACTIVAR)
-   d=8,o=5,b=200:8c,8e,8g,8c6,8e6,8d6,8c6,4g
-3. LED: 3 flashes rápidos → 25% (reposo)
+2. Reproducir arpegio ascendente (RTTTL ACTIVAR)
+   d=4,o=5,b=320:c,16p,e,16p,g,16p,c6
+3. LED: 4 flashes sincronizados (190ms on / 45ms off) → 25% (reposo)
 4. Relé → OFF (cerradura bloqueada)
 ```
 
 ### 8.6 `disable_system`
 ```
 1. Sistema → DESACTIVADO
-2. Reproducir secuencia descendente (RTTTL DESACTIVAR)
-   d=8,o=5,b=200:8c6,8g,8e,8c,8a4,8g,8e,4c
-3. LED: 3 flashes lentos → OFF
+2. Reproducir arpegio descendente (RTTTL DESACTIVAR)
+   d=4,o=5,b=320:c6,16p,g,16p,e,16p,c
+3. LED: 4 flashes sincronizados (190ms on / 45ms off) → OFF
 4. Relé → ON permanentemente (cerradura desbloqueada)
 ```
 
