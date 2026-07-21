@@ -274,19 +274,25 @@ y no comparte cooldown con el externo — son independientes.
 ```
 1. desbloqueo_normal_activo = true
 2. Relé → ON. Detener RTTTL anterior.
-3. Bucle hasta: final carrera ON  O  unlock_duration:
-   a. Reproducir sonido de apertura (RTTTL Apertura)
+3. Bucle hasta unlock_duration:
+   a. Reproducir sonido de apertura (RTTTL APERTURA)
    b. LED sincronizado: 67ms ON / 67ms OFF (sigue patrón c,p)
-   c. Esperar mientras suena (verificando FC y timeout cada 10ms)
-4. Relé → OFF
+   c. Verificar FC cada 10ms:
+      - FC se abre (puerta abierta):
+        * Arranca grace timer (unlock_grace_ms, default 2s)
+        * Durante grace: melodía sigue sonando
+        * Grace expira → detener RTTTL, buzzer OFF, relay sigue ON
+        * FC se cierra (puerta cerrada) → Relay → OFF. Return inmediato.
+      - FC nunca se abre → timeout normal.
+4. Timeout:
+   - Si FC = ON (puerta cerrada) O Safe Lock = OFF → Relé → OFF
+   - Si Safe Lock = ON + puerta abierta → relay queda ON, FC on_press auto-lock
 5. Detener RTTTL. Apagar buzzer.
 6. LED → 25% (reposo, transición 1s)
 7. desbloqueo_normal_activo = false
 ```
 
-> `internal_press` gestiona el LED antes (flash rápido) y después (45s cooldown a 25%,
-> luego flash lento o reposo según FC). Durante el desbloqueo el LED sigue el ritmo
-> de la melodía APERTURA.
+> Durante el desbloqueo el LED sigue el ritmo de la melodía APERTURA. El Safe Lock (toggle vía web) evita que el lock se energice con la puerta abierta. Al cerrar la puerta, el FC on_press ejecuta auto-lock si relay está aún ON.
 
 ### 8.4 `flash_and_beep`
 Reproduce el sonido de **apertura** (RTTTL) en bucle durante el desbloqueo:
@@ -295,10 +301,12 @@ Reproduce el sonido de **apertura** (RTTTL) en bucle durante el desbloqueo:
 d=16,o=7,b=225:c,p,c,p,...  (pitidos rápidos, se repite hasta que finalice el desbloqueo)
 ```
 
-El sonido se inicia al activar el relé y se reproduce en bucle hasta que
-se active el final de carrera o expire `unlock_duration`. El LED parpadea
-sincronizado: 67ms ON (nota) / 67ms OFF (silencio). Tras el desbloqueo,
-el LED vuelve a 25% y `internal_press` gestiona el estado final.
+El sonido se inicia al activar el relé y se reproduce hasta que:
+- La puerta se abre: sigue sonando `unlock_grace_ms` (default 2s), luego silencio.
+- El FC detecta cierre de puerta: fin inmediato, relay → OFF.
+- Expira `unlock_duration`: fin forzado.
+
+El LED parpadea sincronizado: 67ms ON (nota) / 67ms OFF (silencio). Tras el desbloqueo, el LED vuelve a 25% y `internal_press` gestiona el estado final.
 
 ### 8.5 `enable_system`
 ```
@@ -615,31 +623,34 @@ flowchart TD
         LEDON --> UNLOCK[Ejecutar unlock_gate]
         UNLOCK --> COOLDOWN[Esperar doorbell_led_duration<br/>bloqueo para nueva apertura]
         COOLDOWN --> CHECK{FC = ON?}
-        CHECK -- Sí --> RESET[Índice melodía → 0]
+        CHECK -- Sí --> FLASH[gate_open_flash<br/>flash lento + pitido]
         CHECK -- No --> IDLE[LED → 25% reposo]
-        RESET --> FIN_INT
+        FLASH --> FIN_INT
         IDLE --> FIN_INT
     end
 
     subgraph LOCK["🟪 PATIO (Cerradura)"]
         RELE[Relé ON → cerradura pierde 12V]
         RELE2[Relé OFF → cerradura recibe 12V]
-        FC[FC detecta puerta abierta]
+        ABRE[FC detecta puerta abierta]
+        CIERRA[FC detecta puerta cerrada<br/>→ auto-lock inmediato]
+        TIMEOUT[Timeout unlock_duration<br/>+ Safe Lock guard]
     end
 
     subgraph PAN["🟧 SALÓN / VESTÍBULO / PATIO"]
         LED[LED → Flash rápido]
         BEEP[RTTTL Apertura]
+        GRACE[RTTTL sigue unlock_grace_ms<br/>luego silencio]
         LED2[LED → Flash lento + pitido]
     end
 
     PULS --> A
     UNLOCK --> RELE
     UNLOCK --> BEEP
-    LEDON --> LED
-    RELE --> RELE2
-    CHECK --> FC
-    FC --> LED2
+    ABRE --> GRACE
+    CIERRA --> RELE2
+    TIMEOUT --> RELE2
+    RELE2 --> LED2
 ```
 
 ### 12.9 Swimlane — `unlock_gate`
@@ -650,36 +661,49 @@ flowchart TD
         START[Inicio unlock_gate]
         START --> FLAG[desbloqueo_normal_activo = true]
         FLAG --> RELAY_ON[Relé → ON]
-        RELAY_ON --> LOOP{FC = ON?}
-        LOOP -- No --> TIMEOUT{"¿Pasó unlock_duration?"}
-        TIMEOUT -- No --> RTTTL[Reproducir RTTTL Apertura]
-        RTTTL --> LEDSEQ[LED 67ms ON / 67ms OFF<br/>sigue patrón c,p]
-        LEDSEQ --> WAIT[Esperar mientras suena<br/>verifica FC y timeout]
-        WAIT --> LOOP
-        TIMEOUT -- Sí --> RELAY_OFF[Relé → OFF]
-        LOOP -- Sí --> RELAY_OFF
-        RELAY_OFF --> STOP[Detener RTTTL]
-        STOP --> BUZZ_OFF[Apagar buzzer]
-        BUZZ_OFF --> LEDREPO[LED → 25% reposo]
+        RELAY_ON --> LOOP["Bucle<br/>¿Puerta se abrió?"]
+        LOOP -- No --> RTTTL[Reproducir RTTTL Apertura]
+        RTTTL --> LEDSEQ[LED 67ms ON / 67ms OFF]
+        LEDSEQ --> CHK_TIMEOUT["¿Pasó unlock_duration?"]
+        CHK_TIMEOUT -- No --> LOOP
+        CHK_TIMEOUT -- Sí --> TOUT{"Safe Lock ON<br/>Y puerta<br/>sigue abierta?"}
+        TOUT -- Sí --> HOLD[Relé queda ON<br/>→ FC on_press auto-lock]
+        TOUT -- No --> LOCK[Relé → OFF]
+
+        LOOP -- Sí --> GRACE[Arranca grace timer<br/>unlock_grace_ms]
+        GRACE --> GRACE_LOOP{"Grace expiró?"}
+        GRACE_LOOP -- No --> KEEP_MELO[RTTTL sigue sonando]
+        KEEP_MELO --> GRACE_LOOP
+        GRACE_LOOP -- Sí --> SILENCE[Buzzer OFF]
+        SILENCE --> WAIT_CLOSE{"FC se cerró?"}
+        WAIT_CLOSE -- No --> WAIT_CLOSE
+        WAIT_CLOSE -- Sí --> LOCK
+
+        HOLD --> STOP[Detener RTTTL]
+        LOCK --> STOP
+        STOP --> LEDREPO[LED → 25% reposo]
         LEDREPO --> UNFLAG[desbloqueo_normal_activo = false]
     end
 
-    subgraph LOCK["🟪 PATIO"]
+    subgraph LOCK_P["🟪 PATIO"]
         RELE[Relé NC abierto<br/>Cerradura sin 12V]
         RELE2[Relé NC cerrado<br/>Cerradura con 12V]
-        FC[Final Carrera = ON<br/>puerta abierta]
-        FC_OFF[Final Carrera = OFF]
+        ABRE[FC → OFF<br/>puerta abierta]
+        CIERRA[FC → ON<br/>puerta cerrada<br/>→ auto-lock]
     end
 
     subgraph PAN["🟧 SALÓN / VESTÍBULO / PATIO"]
         BEEP[RTTTL Apertura sonando]
         SILENCIO[Buzzer OFF]
+        GRACE_SOUND[RTTTL suena durante grace<br/>luego silencio]
     end
 
     RELAY_ON --> RELE
-    RELAY_OFF --> RELE2
-    FC --> LOOP
+    LOCK --> RELE2
+    ABRE --> LOOP
+    CIERRA --> WAIT_CLOSE
     RTTTL --> BEEP
+    KEEP_MELO --> GRACE_SOUND
     STOP --> SILENCIO
 ```
 
@@ -710,6 +734,8 @@ flowchart TD
     NORMAL --> FIN[Fin emergencia]
     SILENT --> FIN
 ```
+
+> Si **Safe Lock** está activo y el relé quedó ON (lock sin poder, puerta abierta), al abrirse la puerta `EVT → relé = ON → NORMAL` → no hay emergencia. El auto-lock ocurre silenciosamente cuando el FC detecta el cierre (`on_press`).
 
 ## 13. Archivos
 
