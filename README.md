@@ -543,6 +543,10 @@ Flujo: `+12V → Par 4 MR → Relé COM → NC → Par 2 V → Pedal NC → Cerr
 | Cerrado (OFF) | Abierto | ⬛ 0V → apertura emergencia |
 | Abierto (ON) | — | ⬛ 0V → desbloqueo normal |
 
+> **Safe Lock** (configurable vía web): cuando está activo, el lock solo se energiza si el FC indica puerta cerrada. Si al terminar el timeout de apertura la puerta sigue abierta, el relé queda ON (lock sin poder) hasta que el FC detecte el cierre → auto-lock inmediato. Esto evita dejar el imán activo con la puerta abierta. Toggle en `http://<esp>/switches`.
+>
+> **Grace Duration** (configurable vía web, por defecto 2s): tiempo que sigue sonando la melodía después de que el FC detecta que la puerta se abrió. Pasado ese lapso se apaga el buzzer aunque el relay siga ON esperando el cierre. Ajustable en `http://<esp>/numbers`.
+
 ### 12.6 Pull-up de pulsador externo (GPIO16)
 
 El pull-up de 10kΩ para GPIO16 está en el **vestíbulo**, junto al MCU. No en los paneles remotos.

@@ -114,6 +114,10 @@ binary_sensor:
             if (!id(desbloqueo_normal_activo) && !id(lock_relay).state) {
               id(emergency_alert_script).execute();
             }
+        - lambda: |-
+            if (id(system_active) && !id(desbloqueo_normal_activo) && id(safe_lock_enabled).state && id(lock_relay).state) {
+              id(lock_relay).turn_off();
+            }
     on_release:
       then:
         - script.stop: emergency_alert_script
@@ -149,6 +153,17 @@ globals:
   - id: gate_open_flash_interval_ms
     type: int
     initial_value: '5000'
+  - id: unlock_grace_ms
+    type: int
+    initial_value: '2000'
+
+switch:
+  - platform: template
+    name: "Safe Lock"
+    id: safe_lock_enabled
+    optimistic: true
+    initial_value: 'true'
+    restore_mode: RESTORE_DEFAULT_ON
 
 number:
   - platform: template
@@ -177,6 +192,19 @@ number:
       - lambda: |-
           id(gate_open_flash_interval).publish_state(x);
           id(gate_open_flash_interval_ms) = int(x * 1000);
+  - platform: template
+    name: "Grace Duration"
+    min_value: 0.5
+    max_value: 10
+    step: 0.5
+    unit_of_measurement: s
+    initial_value: 2
+    id: unlock_grace_duration
+    optimistic: true
+    set_action:
+      - lambda: |-
+          id(unlock_grace_duration).publish_state(x);
+          id(unlock_grace_ms) = int(x * 1000);
 
 timer:
   - id: timer_reset_melodia
@@ -248,10 +276,12 @@ script:
           unsigned long start = millis();
           unsigned long timeout = id(unlock_duration_ms);
           unsigned long last_toggle = start;
+          unsigned long grace_start = 0;
+          bool door_was_opened = false;
+          bool grace_expired = false;
           bool led_on = true;
 
-          // APERTURA = d=16,o=7,b=225:c,p,c,p,...
-          // 16th note at 225 BPM = 67ms. LED ON durante nota, OFF durante silencio.
+          // LED on full
           {
             auto call = id(led_light).make_call();
             call.set_brightness(1.0f);
@@ -259,13 +289,51 @@ script:
             call.perform();
           }
 
-          while (!id(final_carrera).state && millis() - start < timeout) {
+          while (millis() - start < timeout) {
             unsigned long now = millis();
 
-            if (!id(buzzer_rtttl).is_playing()) {
-              id(buzzer_rtttl).play(std::string(APERTURA));
+            // detect door opened
+            if (!door_was_opened && !id(final_carrera).state) {
+              door_was_opened = true;
+              grace_start = now;
+              id(buzzer_rtttl).stop();
+              id(buzzer_output).turn_off();
             }
 
+            if (door_was_opened) {
+              // door closed → lock immediately
+              if (id(final_carrera).state) {
+                id(lock_relay).turn_off();
+                id(buzzer_rtttl).stop();
+                id(buzzer_output).turn_off();
+                {
+                  auto call = id(led_light).make_call();
+                  call.set_brightness(0.25f);
+                  call.set_transition_length(1000);
+                  call.perform();
+                }
+                id(desbloqueo_normal_activo) = false;
+                return;
+              }
+
+              // grace period: keep melody playing
+              if (!grace_expired && now - grace_start >= id(unlock_grace_ms)) {
+                grace_expired = true;
+                id(buzzer_rtttl).stop();
+                id(buzzer_output).turn_off();
+              }
+
+              if (!grace_expired && !id(buzzer_rtttl).is_playing()) {
+                id(buzzer_rtttl).play(std::string(APERTURA));
+              }
+            } else {
+              // door not opened yet: play melody
+              if (!id(buzzer_rtttl).is_playing()) {
+                id(buzzer_rtttl).play(std::string(APERTURA));
+              }
+            }
+
+            // LED toggling at 67ms
             if (now - last_toggle >= 67) {
               led_on = !led_on;
               last_toggle = now;
@@ -278,7 +346,12 @@ script:
             delay(10);
           }
 
-          id(lock_relay).turn_off();
+          // timeout reached
+          if (id(final_carrera).state || !id(safe_lock_enabled).state) {
+            id(lock_relay).turn_off();
+          }
+          // else: safe lock ON + door open → relay stays ON, FC on_press will lock
+
           id(buzzer_rtttl).stop();
           id(buzzer_output).turn_off();
           {
@@ -314,7 +387,11 @@ script:
       - light.turn_on:
           id: led_light
           brightness: 25%
-      - output.turn_off: lock_relay
+      - lambda: |-
+          if (id(final_carrera).state || !id(safe_lock_enabled).state) {
+            id(lock_relay).turn_off();
+          }
+          // else: safe lock ON + door open → relay stays ON, FC on_press will lock
 
   - id: disable_system_script
     mode: single
