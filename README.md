@@ -30,7 +30,7 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | [NodeMCU ESP8266](https://tienda.lega.ar/producto/esp8266-lua-wifi-v3-ch340-para-nodemcu) | 1 | $11.106,90 | $11.106,90 ✅ | ESP-12E, CP2102, microUSB |
 | Fuente 5V | 1 | $9.315,95 | $9.315,95 | 5V DC, ≥1A, tipo cargador USB |
 | [Fuente 12V](https://tienda.lega.ar/producto/fu12v2000-fuente-switching-12-v-2-a-) | 1 | $13.349,35 | $13.349,35 | 12V DC, ≥2A, tipo brick |
-| [Relé NC](https://tienda.lega.ar/producto/rele-simple-inversor-5v) | 1 | $1.444,80 | $1.444,80 | Módulo relé 1 canal, 5V bobina, 10A/250V contacto |
+| [Relé 5V módulo simple inversor](https://tienda.lega.ar/producto/30rl11g1-modulo-1-relay-rele-5v-simple-inv) | 1 | $2.016,70 | $2.016,70 | Módulo relé 1 canal, 5V bobina, 10A/250V contacto, NC/NA/COM |
 | [Cerradura Magnética](https://tienda.lega.ar/producto/em300-cerradura-electromagnetica) | 1 | $69.786,85 | $69.786,85 ✅ | 12V, tipo ML-1501 o similar, ≤1.5A |
 | [Final de Carrera](https://tienda.lega.ar/producto/mcw1-microswitch-mcw1-22mmx10mm-crueda) | 1 | $1.730,75 | $1.730,75 | NA, microswitch con rodillo |
 | Pedal de Emergencia | 1 | — | — ✅ | Fabricado con pulsador NA (usar existente) |
@@ -47,8 +47,8 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | [Cable UTP Cat5 (x 1m)](https://tienda.lega.ar/producto/cable-utp-interior-cat5-x-metro-5e100-) | 1 | $406,35 | $406,35 ✅ | 4 pares, sólido, CCA o cobre |
 | [Placa perforada 50×50mm](https://tienda.lega.ar/producto/50x50--plaqueta-simple-faz-50x50-fenolico) | 1 | $918,05 | $918,05 | 7×5 cm o similar |
 | [Cables dupont H-H 40P 20cm](https://tienda.lega.ar/producto/chh20-cable-dupont-hembra-hembra-40p-20-cm-) | — | $2.648,80 | $2.648,80 ✅ | Varios, 22AWG |
-| **Total general** | | | **$126.871,50** | (20 cotizados, todos cubiertos) |
-| **Subtotal a comprar** | | | **$35.247,10** | (excluye ✅) |
+| **Total general** | | | **$127.443,40** | (20 cotizados, todos cubiertos) |
+| **Subtotal a comprar** | | | **$35.819,00** | (excluye ✅) |
 
 ## Distribución Física
 
