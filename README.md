@@ -18,8 +18,8 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | 🔊 | Buzzer Musical (RTTTL) | Zumbador piezoeléctrico — melodía y pitidos. ×3 unidades (salón con pot. volumen serie) |
 | 🔹 | Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
 | 🔸 | Pulsadores Externos (×2) | Patio y exterior — GPIO16 en paralelo |
-| 💡 | LEDs Estado | Tiras LED 12V internas (salón, vestíbulo) + LED 3V externos (patio, exterior) |
-| 🔹💡 | Transistor NPN 2N5551 (×2) | Paneles internos — conmutan 12V a tira LED desde GPIO12 |
+| 💡 | LEDs Estado | Tiras LED 12V internas (salón, vestíbulo) + LED 12V externos (patio, exterior, vía 2N5551) |
+| 🔹💡 | Transistor NPN 2N5551 (×6) | 3 para LED (2 tiras internas + 1 externos) + 3 para buzzer |
 | 🚪 | Final de Carrera (NA) | GPIO13 — detecta puerta abierta/cerrada |
 | 🚫 | Pedal de Emergencia | Corte físico NC en serie con 12V de la cerradura |
 
@@ -37,18 +37,17 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | [Buzzer 12V miniatura](https://tienda.lega.ar/producto/buz12-buzzer-miniatura-12v) | 3 | $1.143,80 | $3.431,40 | Buzzer piezoeléctrico 12V, 20mm |
 | [Pulsador NA (interno)](https://tienda.lega.ar/producto/pls930--pulsador-cuadrado-na) | 2 | $466,55 | $933,10 ✅ | Pulsador momentáneo NA, tipo campana |
 | [Pulsador NA (externo)](https://tienda.lega.ar/producto/pfpsz-pulsador-frente-portero-l-nueva) | 2 | $6.742,40 | $13.484,80 ✅ | Pulsador frente portero, estanco IP54, timbre exterior |
-| [LED 5mm Azul Extra Alta](https://tienda.lega.ar/producto/led-5-mm-azul-extra-alta-ef-ea5az) | 2 | $406,35 | $812,70 | 5mm azul, extra alta luminosidad, patios y exterior |
+| [LED 5mm Azul Extra Alta](https://tienda.lega.ar/producto/led-5-mm-azul-extra-alta-ef-ea5az) | 2 | $406,35 | $812,70 | 5mm azul, extra alta luminosidad, patios y exterior, con 1kΩ desde 12V |
 | Tira LED 12V (internos) | 2 | — | — ✅ | RGB o blanco, ~30cm, con resistor serie incorporado |
-| [Transistor NPN 2N5551](https://tienda.lega.ar/producto/2n5551-transistor-npn-160v-600-ma-625mw) | 5 | $165,55 | $827,75 | TO-92, 160V/600mA (2 LED + 3 buzzer) |
-| [Resistencia 1kΩ](https://tienda.lega.ar/producto/res0251k-resistencia-025-w-1k-ohms) | 5 | $165,55 | $827,75 | 1/4W, carbon film (base 2N5551) |
-| Resistencia 150Ω | 2 | $165,55 | $331,10 | 1/4W, carbon film (LED 3.3V serie) |
+| [Transistor NPN 2N5551](https://tienda.lega.ar/producto/2n5551-transistor-npn-160v-600-ma-625mw) | 6 | $165,55 | $993,30 | TO-92, 160V/600mA (3 LED + 3 buzzer) |
+| [Resistencia 1kΩ](https://tienda.lega.ar/producto/res0251k-resistencia-025-w-1k-ohms) | 7 | $165,55 | $1.158,85 | 1/4W, carbon film (base + LED externos 12V) |
 | Resistencia 10kΩ | 1 | $165,55 | $165,55 | 1/4W, carbon film (pull-up GPIO16) |
 | [Potenciómetro 10kΩ](https://tienda.lega.ar/producto/pot710k-potenciometro---lineal-mignon-eje-grueso-10k-ohm) | 1 | $2.091,95 | $2.091,95 | Lineal, reóstato, 6mm |
 | [Cable UTP Cat5 (x 1m)](https://tienda.lega.ar/producto/cable-utp-interior-cat5-x-metro-5e100-) | 1 | $406,35 | $406,35 ✅ | 4 pares, sólido, CCA o cobre |
 | [Placa perforada 50×50mm](https://tienda.lega.ar/producto/50x50--plaqueta-simple-faz-50x50-fenolico) | 1 | $918,05 | $918,05 | 7×5 cm o similar |
 | [Cables dupont H-H 40P 20cm](https://tienda.lega.ar/producto/chh20-cable-dupont-hembra-hembra-40p-20-cm-) | — | $2.648,80 | $2.648,80 ✅ | Varios, 22AWG |
-| **Total general** | | | **$127.443,40** | (20 cotizados, todos cubiertos) |
-| **Subtotal a comprar** | | | **$35.819,00** | (excluye ✅) |
+| **Total general** | | | **$127.608,95** | (19 cotizados, todos cubiertos) |
+| **Subtotal a comprar** | | | **$35.984,55** | (excluye ✅) |
 
 ## Distribución Física
 
@@ -162,7 +161,7 @@ Todos los sonidos del sistema usan RTTTL (definidos en `melodies.h`):
 
 ### 4.6 LEDs Estado
 - GPIO12 PWM → UTP par 3 AZ. Señal común a las 4 zonas.
-- Cada panel tiene su propia conversión local:
+- Cada panel tiene su propia conversión local. Los externos comparten un mismo 2N5551 en el panel del patio:
 
 **Paneles internos (salón, vestíbulo)** — Tira LED 12V transistorizada:
 ```
@@ -172,11 +171,15 @@ UTP par 4 BL/MR (GND) ── emisor
 ```
 (La tira LED incluye resistor limitador serie incorporado.)
 
-**Paneles externos (patio, exterior)** — LED directo:
+**Paneles externos (patio, exterior)** — LED con driver 12V (ambos LEDs en paralelo, mismo 2N5551):
 ```
-UTP par 3 AZ ──┤150Ω├─── LED ─── UTP par 4 BL/MR (GND)
+12V ──┤1kΩ├── LED(+) ── LED(–) ─┐
+                        ┌────────┤ colector 2N5551
+                LED(+) ─┘        │
+                                 emisor ── GND
+GPIO12 PWM ──┤1kΩ├── base 2N5551
 ```
-(GPIO12 conmuta 3.3V PWM directamente al LED vía resistencia limitadora.)
+(Un 2N5551 conmuta 12V para ambos LEDs externos. La R de 1kΩ en colector limita la corriente a ~9mA total.)
 
 - PWM desde GPIO12 controla todo, los cuatro LEDs reciben el mismo brillo.
 - **Efectos:**
@@ -506,11 +509,17 @@ flowchart LR
         NA --> Puls["🔸 Pulsador Ext<br/>NA"]
         Puls --> GND
 
-        AZ --> R150[150Ω] --> LED3["💡 LED 3V"]
-        LED3 --> GND
+        subgraph LedExt["💡 LED externos (patio + exterior)"]
+            AZ --> RB[1kΩ] --> B[2N5551 Base]
+            P4MR --> RL["1kΩ<br/>límitador"] --> LED1["🔵 LED Patio"]
+            P4MR --> RL --> LED2["🔵 LED Exterior"]
+            LED1 --> C[2N5551 Colector]
+            LED2 --> C
+            E[2N5551 Emisor] --> GND
+        end
 
         subgraph BuzzerPatio["🔊 Patio"]
-            BLAZ --> RB[1kΩ] --> BB[2N5551 Base]
+            BLAZ --> RBZ[1kΩ] --> BB[2N5551 Base]
             P4MR --> R0["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12["BUZ12 +"]
             BB --> CB[2N5551 Colector] --> BZ12
             EB[2N5551 Emisor] --> GND
@@ -518,7 +527,7 @@ flowchart LR
     end
 ```
 
-> El panel **exterior** es idéntico pero **sin el buzzer** — no conecta el hilo BL/AZ del par 3. Solo lleva pulsador (par 1 NA), LED (par 3 AZ) y alimentación (par 4).
+> El panel **exterior** es idéntico pero **sin el buzzer** — no conecta el hilo BL/AZ del par 3. Solo lleva pulsador (par 1 NA), LED (par 3 AZ con su 2N5551 en el patio) y alimentación (par 4). Ambos LEDs externos comparten el mismo 2N5551 ubicado en el panel del patio.
 > El pull-up de 10kΩ a 3.3V para GPIO16 está en el **vestíbulo**, junto al MCU.
 ### 12.5 Circuito — Cerradura + Pedal de Emergencia
 
