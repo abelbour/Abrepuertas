@@ -2,8 +2,6 @@ esphome:
   name: esphome-gate
   platform: ESP8266
   board: nodemcuv2
-  includes:
-    - melodies.h
   on_boot:
     priority: 600
     then:
@@ -215,7 +213,13 @@ script:
             - lambda: 'id(cooldown_externo_activo) = true;'
             - timer.cancel: timer_reset_melodia
             - output.turn_off: buzzer_output
-            - rtttl.play: !lambda 'return std::string(ALL_MELODIES[id(melody_index)]);'
+            - lambda: |-
+                switch (id(melody_index)) {
+                  case 0: id(buzzer_rtttl).play(std::string("d=8,o=6,b=140:c,c,g,4g,16g,16p,f,g,c,2c,p")); break;
+                  case 1: id(buzzer_rtttl).play(std::string("d=8,o=6,b=140:c,g,c7,4c7,16c7,16p,b,c7,g,2g,p")); break;
+                  case 2: id(buzzer_rtttl).play(std::string("d=4,o=4,b=100:c7,b,2a,16a,16p,a,d7,b,2g,p")); break;
+                  case 3: id(buzzer_rtttl).play(std::string("d=4,o=4,b=100:a,b,c7,g,f,e,g,4d,16d,16p,c,2c,p")); break;
+                }
             - light.turn_on:
                 id: led_light
                 effect: "Latido Suave"
@@ -316,12 +320,12 @@ script:
               }
 
               if (!grace_expired && !id(buzzer_rtttl).is_playing()) {
-                id(buzzer_rtttl).play(std::string(APERTURA));
+                id(buzzer_rtttl).play(std::string("d=16,o=7,b=225:c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,c"));
               }
             } else {
               // door not opened yet: play melody
               if (!id(buzzer_rtttl).is_playing()) {
-                id(buzzer_rtttl).play(std::string(APERTURA));
+                id(buzzer_rtttl).play(std::string("d=16,o=7,b=225:c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,c"));
               }
             }
 
@@ -358,7 +362,7 @@ script:
     mode: single
     then:
       - lambda: 'id(system_active) = true;'
-      - rtttl.play: !lambda 'return std::string(ACTIVAR);'
+      - lambda: 'id(buzzer_rtttl).play(std::string("d=4,o=5,b=320:c,16p,e,16p,g,16p,c6"));'
       - light.turn_on:
           id: led_light
           brightness: 100%
@@ -397,7 +401,7 @@ script:
     mode: single
     then:
       - lambda: 'id(system_active) = false;'
-      - rtttl.play: !lambda 'return std::string(DESACTIVAR);'
+      - lambda: 'id(buzzer_rtttl).play(std::string("d=4,o=5,b=320:c6,16p,g,16p,e,16p,c"));'
       - light.turn_on:
           id: led_light
           brightness: 100%
@@ -435,10 +439,8 @@ script:
               - lambda: 'return id(emergency_cycle) < 12;'
               - binary_sensor.is_on: final_carrera
           then:
-            - rtttl.play: !lambda 'return std::string(EMERGENCIA);'
+            - lambda: 'id(buzzer_rtttl).play(std::string("d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p"));'
             - lambda: |
-                // EMERGENCIA = d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p
-                // whole note ~1067ms, 8th rest ~133ms
                 for (int i = 0; i < 4 && id(final_carrera).state; i++) {
                   {
                     auto call = id(led_light).make_call();
@@ -482,7 +484,7 @@ script:
                 id: led_light
                 brightness: 100%
                 transition_length: 0s
-            - rtttl.play: !lambda 'return std::string(BEEP_FLASH);'
+            - lambda: 'id(buzzer_rtttl).play(std::string("d=8,o=5,b=300:b"));'
             - delay: 100ms
             - light.turn_off:
                 id: led_light

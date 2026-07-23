@@ -148,7 +148,7 @@ Par 3 BL/AZ ──┤1kΩ├── base 2N5551                   └─── co
 - El panel de salón adicionalmente tiene un potenciómetro de 10kΩ en serie entre BL/AZ y la base del 2N5551 (divisor de tensión) para ajuste local de volumen.
 - Si a futuro el volumen es muy intenso, se reemplaza el cable por una resistencia (ej. 470Ω) en cada panel.
 
-Todos los sonidos del sistema usan RTTTL (definidos en `melodies.h`):
+Todos los sonidos del sistema usan RTTTL (definidos inline en el YAML):
   - `ALL_MELODIES[]`: 4 melodías de timbre
   - `APERTURA`: sonido de desbloqueo
   - `EMERGENCIA`: alarma de emergencia
@@ -380,7 +380,7 @@ desbloqueo interno si la puerta sigue abierta (FC=ON).
 | DESACTIVAR | `d=8,o=5,b=200:8c6,8g,8e,8c,8a4,8g,8e,4c` |
 | BEEP_FLASH | `d=8,o=5,b=300:b` |
 
-Las cadenas se definen en `melodies.h` como `static const char[] PROGMEM` para ahorrar RAM en el ESP8266.
+Las cadenas se definen inline en el YAML como strings literales RTTTL.
 
 ## 12. Diagramas
 
@@ -750,9 +750,6 @@ flowchart TD
 
 ```
 esphome-gate/
-├── SYSTEM_DEFINITION.md   # Especificación completa del sistema
-├── esphome-gate.yaml      # Configuración ESPHome
-├── melodies.h             # Definiciones RTTTL (referencia)
-└── secrets.yaml           # Credenciales WiFi (editar antes de compilar)
+└── esphome-gate.yaml      # Configuración ESPHome (incluye RTTTL inline)
 ```
 
