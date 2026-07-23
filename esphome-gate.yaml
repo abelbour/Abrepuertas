@@ -306,6 +306,7 @@ script:
           id(buzzer_rtttl).play(std::string("d=16,o=7,b=225:c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,c"));
 
           while (millis() - start < timeout) {
+            yield();
             unsigned long now = millis();
 
             // detect door opened
@@ -448,7 +449,8 @@ script:
   - id: emergency_alert_script
     mode: single
     then:
-      - rtttl.stop
+      - rtttl.stop:
+          id: buzzer_rtttl
       - output.turn_off: buzzer_output
       - lambda: 'id(emergency_cycle) = 0;'
       - while:
@@ -467,7 +469,10 @@ script:
                     call.perform();
                   }
                   unsigned long t = millis();
-                  while (millis() - t < 1067 && id(final_carrera).state) delay(10);
+                  while (millis() - t < 1067 && id(final_carrera).state) {
+                    yield();
+                    delay(10);
+                  }
 
                   {
                     auto call = id(led_light).make_call();
@@ -476,7 +481,10 @@ script:
                     call.perform();
                   }
                   t = millis();
-                  while (millis() - t < 133 && id(final_carrera).state) delay(10);
+                  while (millis() - t < 133 && id(final_carrera).state) {
+                    yield();
+                    delay(10);
+                  }
                 }
             - lambda: 'id(emergency_cycle)++;'
       - output.turn_off: buzzer_output
