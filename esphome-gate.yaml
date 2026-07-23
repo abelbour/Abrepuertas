@@ -1,6 +1,5 @@
 esphome:
   name: esphome-gate
-  platform: ESP8266
   board: nodemcuv2
   on_boot:
     priority: 600
