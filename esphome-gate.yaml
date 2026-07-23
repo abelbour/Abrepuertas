@@ -4,6 +4,7 @@ esphome:
     priority: 600
     then:
       - output.turn_on: lock_relay
+      - lambda: 'id(lock_relay_on) = true;'
 
 esp8266:
   board: nodemcuv2
@@ -81,12 +82,17 @@ binary_sensor:
                 id(internal_press_script).execute();
               }
       - min_length: 4100ms
-        max_length: 60000ms
+        max_length: 8000ms
         then:
           - lambda: |-
               if (!id(system_active)) {
                 id(enable_system_script).execute();
-              } else if (x > 8000) {
+              }
+      - min_length: 8100ms
+        max_length: 60000ms
+        then:
+          - lambda: |-
+              if (id(system_active)) {
                 id(disable_system_script).execute();
               }
 
@@ -113,7 +119,7 @@ binary_sensor:
     on_press:
       then:
         - lambda: |-
-            if (!id(desbloqueo_normal_activo) && !id(lock_relay).state) {
+            if (!id(desbloqueo_normal_activo) && !id(lock_relay_on)) {
               id(emergency_alert_script).execute();
             }
     on_release:
@@ -121,8 +127,9 @@ binary_sensor:
         - script.stop: emergency_alert_script
         - script.stop: gate_open_flash_script
         - lambda: |-
-            if (id(system_active) && !id(desbloqueo_normal_activo) && id(safe_lock_enabled).state && id(lock_relay).state) {
+            if (id(system_active) && !id(desbloqueo_normal_activo) && id(safe_lock_enabled).state && id(lock_relay_on)) {
               id(lock_relay).turn_off();
+              id(lock_relay_on) = false;
             }
         - light.turn_off: led_light
         - light.turn_on:
@@ -159,6 +166,9 @@ globals:
   - id: unlock_grace_ms
     type: int
     initial_value: '2000'
+  - id: lock_relay_on
+    type: bool
+    initial_value: 'true'
 
 switch:
   - platform: template
@@ -266,6 +276,7 @@ script:
           id(buzzer_rtttl).stop();
           id(buzzer_output).turn_off();
           id(lock_relay).turn_on();
+          id(lock_relay_on) = true;
 
           unsigned long start = millis();
           unsigned long timeout = id(unlock_duration_ms);
@@ -298,6 +309,7 @@ script:
               // door closed → lock immediately
               if (!id(final_carrera).state) {
                 id(lock_relay).turn_off();
+                id(lock_relay_on) = false;
                 id(buzzer_rtttl).stop();
                 id(buzzer_output).turn_off();
                 {
@@ -343,6 +355,7 @@ script:
           // timeout reached
           if (!id(final_carrera).state || !id(safe_lock_enabled).state) {
             id(lock_relay).turn_off();
+            id(lock_relay_on) = false;
           }
           // else: safe lock ON + door open → relay stays ON, FC on_release will lock
 
@@ -394,6 +407,7 @@ script:
               - switch.is_off: safe_lock_enabled
           then:
             - output.turn_off: lock_relay
+            - lambda: 'id(lock_relay_on) = false;'
 
   - id: disable_system_script
     mode: single
@@ -424,6 +438,7 @@ script:
       - delay: 190ms
       - light.turn_off: led_light
       - output.turn_on: lock_relay
+      - lambda: 'id(lock_relay_on) = true;'
 
   - id: emergency_alert_script
     mode: single
