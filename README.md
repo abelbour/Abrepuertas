@@ -1076,7 +1076,7 @@ flowchart TD
         TOUT -- No --> LOCK[Relé → OFF]
 
         LOOP -- Sí --> STOP_MELO[Detener RTTTL<br/>Buzzer OFF]
-        STOP_MELO --> GRACE[Arranca grace timer<br/>unlock_grace_ms (sin sonido)]
+        STOP_MELO --> GRACE[Arranca grace timer<br/>unlock_grace_ms — sin sonido]
         GRACE --> GRACE_LOOP{"Grace expiró?"}
         GRACE_LOOP -- No --> GRACE_LOOP
         GRACE_LOOP -- Sí --> WAIT_CLOSE{"FC se cerró?"}
