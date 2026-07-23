@@ -196,11 +196,11 @@ number:
     set_action:
       - lambda: 'id(unlock_grace_ms) = int(x * 1000);'
 
-timer:
+script:
   - id: timer_reset_melodia
     mode: single
-    duration: 60s
     then:
+      - delay: 60s
       - lambda: 'id(melody_index) = 0;'
 
 script:
@@ -212,7 +212,7 @@ script:
             lambda: 'return id(system_active) && !id(cooldown_externo_activo);'
           then:
             - lambda: 'id(cooldown_externo_activo) = true;'
-            - timer.cancel: timer_reset_melodia
+            - script.stop: timer_reset_melodia
             - output.turn_off: buzzer_output
             - lambda: |-
                 switch (id(melody_index)) {
@@ -232,7 +232,7 @@ script:
                 transition_length: 1s
             - lambda: 'id(cooldown_externo_activo) = false;'
             - lambda: 'id(melody_index) = (id(melody_index) + 1) % 4;'
-            - timer.start: timer_reset_melodia
+            - script.execute: timer_reset_melodia
 
   - id: internal_press_script
     mode: single
