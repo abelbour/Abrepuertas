@@ -153,7 +153,7 @@ Relé **conmuta +12V** (high-side switching).
 - NA no se usa
 
 ### 4.4 Final de Carrera
-- GPIO13. INPUT con pull-up externo 10kΩ a 3.3V en el vestíbulo (junto al MCU). No usar pull-up interno por inmunidad a ruido en cable de 8m.
+- GPIO13. INPUT con pull-up externo 10kΩ a 3.3V en el vestíbulo (junto al MCU). No usar `INPUT_PULLUP` interno (30-100kΩ): su alta impedancia es más susceptible a ruido acoplado en 8m de cable UTP.
 - **ON**: puerta abierta. **OFF**: puerta cerrada.
 - Si se activa con relé OFF → apertura por emergencia
 - **Al cerrar la puerta** (FC → OFF): si el LED está en flash lento (estado puerta abierta), vuelve a 25% reposo. No afecta al cooldown externo.
@@ -324,10 +324,10 @@ y no comparte cooldown con el externo — son independientes.
 > Durante el desbloqueo el LED sigue el ritmo de la melodía APERTURA. El Safe Lock (toggle vía web) evita que el lock se energice con la puerta abierta. Al cerrar la puerta, el FC on_release ejecuta auto-lock si relay está aún ON.
 
 ### 8.4 `flash_and_beep`
-Reproduce el sonido de **apertura** (RTTTL) una vez al inicio del desbloqueo, se ejecuta en background mientras el bucle monitorea FC y LED:
+Reproduce el sonido de **apertura** (RTTTL) una vez al inicio del desbloqueo, se ejecuta en background mientras el bucle monitorea FC y LED. La cadena RTTTL se genera dinámicamente en lambda con el número exacto de notas (`c,p`) para cubrir `unlock_duration_ms`, evitando una cadena hardcodeada de cientos de caracteres:
 
 ```
-d=16,o=7,b=225:c,p,c,p,...  (pitidos rápidos, se repite hasta que finalice el desbloqueo)
+d=16,o=7,b=225:c,p,c,p,c,p,c,p,... (generado en tiempo real)
 ```
 
 El sonido se inicia al activar el relé y se reproduce hasta que:
@@ -803,4 +803,22 @@ flowchart TD
 esphome-gate/
 └── esphome-gate.yaml      # Configuración ESPHome (incluye RTTTL inline)
 ```
+
+## 14. Notas de Diseño
+
+### 14.1 GPIO13 — INPUT + external pull-up 10kΩ
+
+Se evaluó usar `INPUT_PULLUP` interno (~30-100kΩ) pero se descartó por la longitud del cable UTP2 (≤8m, cobre sólido). Un pull-up de alta impedancia en un cable de 8m forma una antena eficiente para ruido electromagnético (proveniente del relé, la conmutación del lock a 1.5A, y acoplamiento capacitivo entre pares del UTP). El resistor externo de 10kΩ provee una impedancia 3-10× menor, reduciendo drásticamente la tensión inducida.
+
+### 14.2 unlock_gate — while loop C++ con `yield()`
+
+Se evaluó reemplazar el bucle C++ por la acción nativa `wait_until` de ESPHome para evitar cualquier riesgo de bloqueo del loop principal. Se descartó porque:
+
+- El script requiere sincronización precisa del LED a 67ms (2.5 semicyclos de red a 50Hz), difícil de lograr con acciones YAML sin un bucle.
+- La máquina de estados interna (FC abierto → grace timer → FC cerrado) usa 4 variables booleanas compartidas que serían difíciles de mantener en YAML puro con scripts anidados.
+- El bucle ya incluye `yield()` al inicio de cada iteración, lo que cede control al loop de ESPHome y al stack WiFi. El `delay(10)` al final solo espera el próximo tick de 10ms. No se han observado reseteos por WDT ni desconexiones WiFi durante pruebas.
+
+### 14.3 RTTTL generado dinámicamente
+
+La cadena RTTTL de apertura `"d=16,o=7,b=225:c,p,..."` se genera en tiempo de ejecución con el número de notas necesario para cubrir exactamente `unlock_duration_ms`. Esto ahorra ~350 bytes de Flash y se adapta automáticamente al slider web de duración de desbloqueo (sección 10).
 

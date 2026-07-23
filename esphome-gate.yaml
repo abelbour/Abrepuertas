@@ -212,6 +212,17 @@ number:
     optimistic: true
     set_action:
       - lambda: 'id(unlock_grace_ms) = int(x * 1000);'
+  - platform: template
+    name: "Unlock Duration"
+    min_value: 1
+    max_value: 10
+    step: 1
+    unit_of_measurement: s
+    initial_value: 5
+    id: unlock_duration
+    optimistic: true
+    set_action:
+      - lambda: 'id(unlock_duration_ms) = int(x * 1000);'
 
 script:
   - id: external_press_script
@@ -302,8 +313,16 @@ script:
             call.perform();
           }
 
-          // play RTTTL once, runs in background during loop
-          id(buzzer_rtttl).play(std::string("d=16,o=7,b=225:c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,c"));
+          // play RTTTL with exact duration matching unlock_duration_ms
+          {
+            int total_notes = (id(unlock_duration_ms) / 67) + 4;
+            std::string rtttl = "d=16,o=7,b=225:";
+            for (int i = 0; i < total_notes; i++) {
+              rtttl += (i % 2 == 0) ? "c" : "p";
+              if (i < total_notes - 1) rtttl += ",";
+            }
+            id(buzzer_rtttl).play(rtttl);
+          }
 
           while (millis() - start < timeout) {
             yield();
@@ -380,29 +399,15 @@ script:
     then:
       - lambda: 'id(system_active) = true;'
       - lambda: 'id(buzzer_rtttl).play(std::string("d=4,o=5,b=320:c,16p,e,16p,g,16p,c6"));'
-      - light.turn_on:
-          id: led_light
-          brightness: 100%
-      - delay: 190ms
-      - light.turn_off: led_light
-      - delay: 45ms
-      - light.turn_on:
-          id: led_light
-          brightness: 100%
-      - delay: 190ms
-      - light.turn_off: led_light
-      - delay: 45ms
-      - light.turn_on:
-          id: led_light
-          brightness: 100%
-      - delay: 190ms
-      - light.turn_off: led_light
-      - delay: 45ms
-      - light.turn_on:
-          id: led_light
-          brightness: 100%
-      - delay: 190ms
-      - light.turn_off: led_light
+      - repeat:
+          count: 4
+          then:
+            - light.turn_on:
+                id: led_light
+                brightness: 100%
+            - delay: 190ms
+            - light.turn_off: led_light
+            - delay: 45ms
       - light.turn_on:
           id: led_light
           brightness: 25%
@@ -420,29 +425,15 @@ script:
     then:
       - lambda: 'id(system_active) = false;'
       - lambda: 'id(buzzer_rtttl).play(std::string("d=4,o=5,b=320:c6,16p,g,16p,e,16p,c"));'
-      - light.turn_on:
-          id: led_light
-          brightness: 100%
-      - delay: 190ms
-      - light.turn_off: led_light
-      - delay: 45ms
-      - light.turn_on:
-          id: led_light
-          brightness: 100%
-      - delay: 190ms
-      - light.turn_off: led_light
-      - delay: 45ms
-      - light.turn_on:
-          id: led_light
-          brightness: 100%
-      - delay: 190ms
-      - light.turn_off: led_light
-      - delay: 45ms
-      - light.turn_on:
-          id: led_light
-          brightness: 100%
-      - delay: 190ms
-      - light.turn_off: led_light
+      - repeat:
+          count: 4
+          then:
+            - light.turn_on:
+                id: led_light
+                brightness: 100%
+            - delay: 190ms
+            - light.turn_off: led_light
+            - delay: 45ms
       - output.turn_on: lock_relay
       - lambda: 'id(lock_relay_on) = true;'
 
