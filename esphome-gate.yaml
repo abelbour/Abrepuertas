@@ -164,7 +164,6 @@ switch:
     name: "Safe Lock"
     id: safe_lock_enabled
     optimistic: true
-    initial_value: 'true'
     restore_mode: RESTORE_DEFAULT_ON
 
 number:
@@ -428,7 +427,7 @@ script:
   - id: emergency_alert_script
     mode: single
     then:
-      - rtttl.stop: buzzer_rtttl
+      - rtttl.stop
       - output.turn_off: buzzer_output
       - lambda: 'id(emergency_cycle) = 0;'
       - while:
