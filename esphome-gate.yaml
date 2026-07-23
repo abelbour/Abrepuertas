@@ -197,13 +197,6 @@ number:
       - lambda: 'id(unlock_grace_ms) = int(x * 1000);'
 
 script:
-  - id: timer_reset_melodia
-    mode: single
-    then:
-      - delay: 60s
-      - lambda: 'id(melody_index) = 0;'
-
-script:
   - id: external_press_script
     mode: single
     then:
@@ -491,3 +484,9 @@ script:
                 id: led_light
                 transition_length: 0s
             - delay: !lambda 'return id(gate_open_flash_interval_ms) - 100;'
+
+  - id: timer_reset_melodia
+    mode: single
+    then:
+      - delay: 60s
+      - lambda: 'id(melody_index) = 0;'
