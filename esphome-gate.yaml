@@ -50,7 +50,12 @@ light:
           max_brightness: 100%
       - strobe:
           name: "Flash Rapido"
-          duration: 400ms
+          colors:
+            - state: true
+              brightness: 100%
+              duration: 400ms
+            - state: false
+              duration: 400ms
 
 rtttl:
   output: buzzer_output
