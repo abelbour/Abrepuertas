@@ -137,7 +137,7 @@ flowchart LR
 - **Al cerrar la puerta** (FC → OFF): si el LED está en flash lento (estado puerta abierta), vuelve a 25% reposo. No afecta al cooldown externo.
 
 ### 4.5 Buzzer Musical (RTTTL)
-- GPIO14 (PWM) → 1kΩ → 2N5551 base. El transistor conmuta 12V (Par 4 MR) hacia Par 3 BL/AZ.
+- GPIO14 (PWM) → Par 3 BL/AZ. El UTP transporta señal PWM 3.3V hacia la base del 2N5551 en cada panel. Cada transistor conmuta 12V local (Par 4 MR) al BUZ12.
 - Los paneles de salón, vestíbulo y patio tienen su propio 2N5551 local que recibe la señal de BL/AZ y conmuta 12V al BUZ12 (el exterior no lleva buzzer).
 - En cada panel, entre 12V y el buzzer hay un placeholder para resistencia de atenuación (0Ω = cable directo por ahora):
 ```
@@ -288,14 +288,14 @@ y no comparte cooldown con el externo — son independientes.
         * FC se cierra (puerta cerrada) → Relay → OFF. Return inmediato.
       - FC nunca se abre → timeout normal.
 4. Timeout:
-   - Si FC = ON (puerta cerrada) O Safe Lock = OFF → Relé → OFF
-   - Si Safe Lock = ON + puerta abierta → relay queda ON, FC on_press auto-lock
+   - Si FC = OFF (puerta cerrada) O Safe Lock = OFF → Relé → OFF
+   - Si Safe Lock = ON + puerta abierta → relay queda ON, FC on_release auto-lock
 5. Detener RTTTL. Apagar buzzer.
 6. LED → 25% (reposo, transición 1s)
 7. desbloqueo_normal_activo = false
 ```
 
-> Durante el desbloqueo el LED sigue el ritmo de la melodía APERTURA. El Safe Lock (toggle vía web) evita que el lock se energice con la puerta abierta. Al cerrar la puerta, el FC on_press ejecuta auto-lock si relay está aún ON.
+> Durante el desbloqueo el LED sigue el ritmo de la melodía APERTURA. El Safe Lock (toggle vía web) evita que el lock se energice con la puerta abierta. Al cerrar la puerta, el FC on_release ejecuta auto-lock si relay está aún ON.
 
 ### 8.4 `flash_and_beep`
 Reproduce el sonido de **apertura** (RTTTL) en bucle durante el desbloqueo:
@@ -676,7 +676,7 @@ flowchart TD
         LEDSEQ --> CHK_TIMEOUT["¿Pasó unlock_duration?"]
         CHK_TIMEOUT -- No --> LOOP
         CHK_TIMEOUT -- Sí --> TOUT{"Safe Lock ON<br/>Y puerta<br/>sigue abierta?"}
-        TOUT -- Sí --> HOLD[Relé queda ON<br/>→ FC on_press auto-lock]
+        TOUT -- Sí --> HOLD[Relé queda ON<br/>→ FC on_release auto-lock]
         TOUT -- No --> LOCK[Relé → OFF]
 
         LOOP -- Sí --> GRACE[Arranca grace timer<br/>unlock_grace_ms]
@@ -697,8 +697,8 @@ flowchart TD
     subgraph LOCK_P["🟪 PATIO"]
         RELE[Relé NC abierto<br/>Cerradura sin 12V]
         RELE2[Relé NC cerrado<br/>Cerradura con 12V]
-        ABRE[FC → OFF<br/>puerta abierta]
-        CIERRA[FC → ON<br/>puerta cerrada<br/>→ auto-lock]
+        ABRE[FC → ON<br/>puerta abierta]
+        CIERRA[FC → OFF<br/>puerta cerrada<br/>→ auto-lock]
     end
 
     subgraph PAN["🟧 SALÓN / VESTÍBULO / PATIO"]
@@ -744,7 +744,7 @@ flowchart TD
     SILENT --> FIN
 ```
 
-> Si **Safe Lock** está activo y el relé quedó ON (lock sin poder, puerta abierta), al abrirse la puerta `EVT → relé = ON → NORMAL` → no hay emergencia. El auto-lock ocurre silenciosamente cuando el FC detecta el cierre (`on_press`).
+> Si **Safe Lock** está activo y el relé quedó ON (lock sin poder, puerta abierta), al abrirse la puerta `EVT → relé = ON → NORMAL` → no hay emergencia. El auto-lock ocurre silenciosamente cuando el FC detecta el cierre (`on_release`).
 
 ## 13. Archivos
 
