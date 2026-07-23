@@ -10,11 +10,8 @@ esphome:
       - output.turn_on: lock_relay
 
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
   ap:
     ssid: "Gate Fallback Hotspot"
-    password: !secret ap_password
 
 captive_portal:
 
@@ -176,9 +173,7 @@ number:
     id: doorbell_led_duration
     optimistic: true
     set_action:
-      - lambda: |-
-          id(doorbell_led_duration).publish_state(x);
-          id(doorbell_led_duration_ms) = int(x * 1000);
+      - lambda: 'id(doorbell_led_duration_ms) = int(x * 1000);'
   - platform: template
     name: "Gate Open Flash Interval"
     min_value: 1
@@ -189,9 +184,7 @@ number:
     id: gate_open_flash_interval
     optimistic: true
     set_action:
-      - lambda: |-
-          id(gate_open_flash_interval).publish_state(x);
-          id(gate_open_flash_interval_ms) = int(x * 1000);
+      - lambda: 'id(gate_open_flash_interval_ms) = int(x * 1000);'
   - platform: template
     name: "Grace Duration"
     min_value: 0.5
@@ -202,9 +195,7 @@ number:
     id: unlock_grace_duration
     optimistic: true
     set_action:
-      - lambda: |-
-          id(unlock_grace_duration).publish_state(x);
-          id(unlock_grace_ms) = int(x * 1000);
+      - lambda: 'id(unlock_grace_ms) = int(x * 1000);'
 
 timer:
   - id: timer_reset_melodia
@@ -253,16 +244,17 @@ script:
             - output.turn_off: buzzer_output
             - script.execute: unlock_gate_script
             - delay: !lambda 'return id(doorbell_led_duration_ms);'
-            - lambda: |-
-                if (id(final_carrera).state) {
-                  id(melody_index) = 0;
-                  id(gate_open_flash_script).execute();
-                } else {
-                  auto call = id(led_light).make_call();
-                  call.set_brightness(0.25);
-                  call.set_transition_length(1000);
-                  call.perform();
-                }
+            - if:
+                condition:
+                  binary_sensor.is_on: final_carrera
+                then:
+                  - lambda: 'id(melody_index) = 0;'
+                  - script.execute: gate_open_flash_script
+                else:
+                  - light.turn_on:
+                      id: led_light
+                      brightness: 25%
+                      transition_length: 1s
 
   - id: unlock_gate_script
     mode: single
@@ -393,11 +385,13 @@ script:
       - light.turn_on:
           id: led_light
           brightness: 25%
-      - lambda: |-
-          if (id(final_carrera).state || !id(safe_lock_enabled).state) {
-            id(lock_relay).turn_off();
-          }
-          // else: safe lock ON + door open → relay stays ON, FC on_press will lock
+      - if:
+          condition:
+            or:
+              - binary_sensor.is_on: final_carrera
+              - switch.is_off: safe_lock_enabled
+          then:
+            - output.turn_off: lock_relay
 
   - id: disable_system_script
     mode: single
@@ -437,7 +431,9 @@ script:
       - lambda: 'id(emergency_cycle) = 0;'
       - while:
           condition:
-            lambda: 'return id(emergency_cycle) < 12 && id(final_carrera).state;'
+            and:
+              - lambda: 'return id(emergency_cycle) < 12;'
+              - binary_sensor.is_on: final_carrera
           then:
             - rtttl.play: !lambda 'return std::string(EMERGENCIA);'
             - lambda: |
@@ -464,22 +460,23 @@ script:
                 }
             - lambda: 'id(emergency_cycle)++;'
       - output.turn_off: buzzer_output
-      - lambda: |-
-          if (id(final_carrera).state) {
-            id(gate_open_flash_script).execute();
-          } else {
-            auto call = id(led_light).make_call();
-            call.set_brightness(0.25);
-            call.set_transition_length(1000);
-            call.perform();
-          }
+      - if:
+          condition:
+            binary_sensor.is_on: final_carrera
+          then:
+            - script.execute: gate_open_flash_script
+          else:
+            - light.turn_on:
+                id: led_light
+                brightness: 25%
+                transition_length: 1s
 
   - id: gate_open_flash_script
     mode: single
     then:
       - while:
           condition:
-            lambda: 'return id(final_carrera).state;'
+            binary_sensor.is_on: final_carrera
           then:
             - light.turn_on:
                 id: led_light
