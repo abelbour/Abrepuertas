@@ -78,8 +78,8 @@ flowchart LR
         EP["Panel de timbre<br/>─────────<br/>🔸 Pulsador Ext (GPIO16)<br/>💡 LED 3V (GPIO12)"]
     end
 
-    Salon ---|UTP1 (interior)| Vestibulo
-    Vestibulo ---|UTP2 (exterior, ≤8m)| Patio ---|UTP2| Exterior
+    Salon -- UTP1 (interior) --- Vestibulo
+    Vestibulo -- UTP2 (exterior, ≤8m) --- Patio -- UTP2 --- Exterior
     MCU -.-> VP
 ```
 
@@ -1023,7 +1023,7 @@ flowchart TD
         A{"Sistema ACTIVADO?"}
         A -- No --> FIN_INT[Ignorar]
         A -- Sí --> UNLOCK[Ejecutar unlock_gate]
-        UNLOCK -> CHECK1{"FC = ON?<br/>(verific. inmediata)"}
+        UNLOCK --> CHECK1{"FC = ON?<br/>(verific. inmediata)"}
         CHECK1 -- Sí --> FLASH1[gate_open_flash<br/>flash lento + pitido<br/>reseta playlist]
         FLASH1 --> COOLDOWN
         CHECK1 -- No --> COOLDOWN
