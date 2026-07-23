@@ -42,13 +42,13 @@ exterior (patio), sin cables adicionales.
 | Tira LED 12V (internos) | 2 | — | — ✅ | RGB o blanco, ~30cm, con resistor serie incorporado |
 | [Transistor NPN 2N5551](https://tienda.lega.ar/producto/2n5551-transistor-npn-160v-600-ma-625mw) | 6 | $165,55 | $993,30 | TO-92, 160V/600mA (3 LED + 3 buzzer) |
 | [Resistencia 1kΩ](https://tienda.lega.ar/producto/res0251k-resistencia-025-w-1k-ohms) | 8 | $165,55 | $1.324,40 | 1/4W, carbon film (base + LED externos 12V) |
-| Resistencia 10kΩ | 1 | $165,55 | $165,55 | 1/4W, carbon film (pull-up GPIO16) |
+| Resistencia 10kΩ | 2 | $165,55 | $331,10 | 1/4W, carbon film (pull-up GPIO16 + GPIO13) |
 | [Potenciómetro 10kΩ](https://tienda.lega.ar/producto/pot710k-potenciometro---lineal-mignon-eje-grueso-10k-ohm) | 1 | $2.091,95 | $2.091,95 | Lineal, reóstato, 6mm |
 | [Cable UTP Cat5 (x 1m)](https://tienda.lega.ar/producto/cable-utp-interior-cat5-x-metro-5e100-) | 2 | $406,35 | $812,70 ✅ | 4 pares, sólido, cobre (1 interior + 1 exterior) |
 | [Placa perforada 50×50mm](https://tienda.lega.ar/producto/50x50--plaqueta-simple-faz-50x50-fenolico) | 1 | $918,05 | $918,05 | 7×5 cm o similar |
 | [Cables dupont H-H 40P 20cm](https://tienda.lega.ar/producto/chh20-cable-dupont-hembra-hembra-40p-20-cm-) | — | $2.648,80 | $2.648,80 ✅ | Varios, 22AWG |
-| **Total general** | | | **$128.015,30** | (20 cotizados, todos cubiertos) |
-| **Subtotal a comprar** | | | **$35.984,55** | (excluye ✅) |
+| **Total general** | | | **$128.180,85** | (20 cotizados, todos cubiertos) |
+| **Subtotal a comprar** | | | **$36.150,10** | (excluye ✅) |
 
 ## Distribución Física
 
@@ -102,24 +102,24 @@ Distancia máxima vestíbulo → patio: **8 metros**. Distancia vestíbulo → s
 
 ### UTP2 — Exterior (vestíbulo ↔ patio, ≤8m, cobre sólido)
 
-Relé **conmuta GND** (low-side switching).
+Relé **conmuta +12V** (high-side switching).
 
 | Par | Hilo | Señal | Emoji | Corriente | Grupo |
 |:---:|:----:|-------|:-----:|:---------:|-------|
-| 1 | BL | **12V always** (paralelo con NA) | ⚡ | 1.5A + 0.3A | Power |
-| 1 | NA | **12V always** (paralelo con BL) | ⚡ | 1.5A + 0.3A | Power |
+| 1 | BL | **12V always** (periféricos) | ⚡ | 0.3A | Power |
+| 1 | NA | **12V lock switched** (vía relé NC) | 🔒 | **1.5A** | Power |
 | 2 | BL/V | GPIO16 (pulsador externo) | 🔸 | <1mA | Entradas |
-| 2 | V | GPIO13 (final carrera) | 🚪 | <1mA | Patio |
+| 2 | V | GPIO13 (final carrera, pull-up 10kΩ ext.) | 🚪 | <1mA | Patio |
 | 3 | BL/AZ | GPIO14 (buzzer patio) | 🔊 | <1mA | Audio |
 | 3 | AZ | GPIO12 (PWM LEDs externos) | 💡 | <1mA | Broadcast |
-| 4 | BL/MR | **GND periféricos** (directo) | ⬛ | 0.3A | Power |
-| 4 | MR | **GND lock retorno** (vía relé NC) | ⬛ | **1.5A** | Power |
+| 4 | BL/MR | **GND común** (lock + periféricos, paralelo con MR) | ⬛ | **1.8A** | Power |
+| 4 | MR | **GND común** (lock + periféricos, paralelo con BL/MR) | ⬛ | **1.8A** | Power |
 
-- 12V viaja por Par 1 (2 hilos paralelo) → alimenta lock + periféricos exterior
-- Relé NC en vestíbulo conmuta GND: OFF = retorno lock a GND (cerrado), ON = retorno lock abierto (desbloqueado)
-- GND periféricos (Par 4 BL/MR) va directo a GND, no pasa por el relé
-- Caída de tensión a 8m con cobre: lock recibe ~10.6V (~88% fuerza) ✅✅
-- Cada panel solo pela los pares que necesita (ej. exterior solo UTP2 pares 1, 2, 3 AZ, 4 BL/MR)
+- 12V always (Par 1 BL) alimenta periféricos; 12V lock (Par 1 NA) conmutado por relé NC alimenta la cerradura
+- Relé NC en vestíbulo conmuta +12V: **OFF** → NC cerrado → 12V al lock → cerradura activa. **ON** → NC abierto → lock sin 12V → desbloqueado
+- GND común por Par 4 completo (2 hilos paralelo): ~0.9A por hilo, disipación balanceada
+- Caída de tensión a 8m con cobre: lock recibe ~10.4V (~87% fuerza) ✅✅
+- Cada panel solo pela los pares que necesita
 
 ## 3. Asignación de Pines
 
@@ -129,7 +129,7 @@ Relé **conmuta GND** (low-side switching).
 | GPIO16 | 🔸 | Pulsadores externos (patio + exterior, paralelo) | Entrada (pull-up ext.) |
 | GPIO12 | 💡 | PWM LEDs — señal común a todas las zonas | Salida (PWM) |
 | GPIO14 | 🔊 | Buzzer Musical (×3: salón, vestíbulo, patio; salón con pot. serie) | Salida (PWM 2000 Hz, RTTTL) |
-| GPIO5 | 🔒 | Relé de Cerradura low-side (NC → GND lock, NA → libre) | Salida (relé) |
+| GPIO5 | 🔒 | Relé de Cerradura high-side (NC → +12V lock, COM → 12V) | Salida (relé) |
 | GPIO13 | 🚪 | Final de Carrera + detección emergencia | Entrada (pull-up, NA) |
 
 ## 4. Definición de Componentes
@@ -147,13 +147,13 @@ Relé **conmuta GND** (low-side switching).
 
 ### 4.3 Relé
 - GPIO5. **ID**: `lock_relay`
-- Conmutación **low-side**: el relé abre/cierra el retorno GND de la cerradura.
-- **OFF** → NC cerrado → retorno GND del lock a masa → cerradura recibe 12V → puerta cerrada
-- **ON** → NC abierto → retorno GND del lock abierto → cerradura sin corriente → puerta desbloqueada
+- Conmutación **high-side**: el relé abre/cierra el +12V de la cerradura.
+- **OFF** → NC cerrado → +12V al lock → cerradura recibe 12V → puerta cerrada
+- **ON** → NC abierto → lock sin 12V → cerradura sin corriente → puerta desbloqueada
 - NA no se usa
 
 ### 4.4 Final de Carrera
-- GPIO13. INPUT_PULLUP. NA a GND.
+- GPIO13. INPUT con pull-up externo 10kΩ a 3.3V en el vestíbulo (junto al MCU). No usar pull-up interno por inmunidad a ruido en cable de 8m.
 - **ON**: puerta abierta. **OFF**: puerta cerrada.
 - Si se activa con relé OFF → apertura por emergencia
 - **Al cerrar la puerta** (FC → OFF): si el LED está en flash lento (estado puerta abierta), vuelve a 25% reposo. No afecta al cooldown externo.
@@ -206,7 +206,7 @@ UTP2 Par 3 AZ ──┤1kΩ├── base 2N5551
 - PWM desde GPIO12 controla todo, los cuatro LEDs reciben el mismo brillo.
 - **Efectos:**
   - *Latido suave*: oscilación 50%–100% con transición de 1s
-  - *Flash rápido*: 200ms ON / 200ms OFF
+  - *Parpadeo rápido (unlock)*: 67ms ON / 67ms OFF, sincronizado con melodía APERTURA
   - *Flash lento*: duración configurable (`gate_open_flash_interval`), acompañado de pitido corto
 
 ## 5. Estado del Sistema
@@ -247,7 +247,7 @@ el relé no se confunde con emergencia.
 | 🔹 >4s (DESACT → ACTIVAR) | OFF | Secuencia activación | 3 flashes → 25% |
 | 🔹 >8s (ACTIV → DESACTIVAR) | ON (perm.) | Secuencia desactivación | 3 flashes → OFF |
 | 🔸 Externo (ACTIVADO) | — | Melodía actual | Latido 100% `doorbell_led_duration` |
-| 🔹 Interno (ACTIVADO) | ON `unlock_duration` | RTTTL Apertura | Flash rápido |
+| 🔹 Interno (ACTIVADO) | ON `unlock_duration` | RTTTL Apertura | 100% + 67ms parpadeo |
 | 🚪 Abierta tras desbloqueo | OFF | Pitido c/flash | Flash lento `gate_open_flash_interval` |
 | 🚪 Cerrada tras desbloqueo | OFF | — | 25% |
 | 🚪 FC → OFF (cierra) | — | — | Si estaba en flash lento → 25% |
@@ -285,12 +285,15 @@ timer se cancela (paso 4) y se reinicia al final del cooldown (paso 11).
 ### 8.2 `internal_press` (salón / vestíbulo — abrir puerta)
 ```
 1. Si sistema DESACTIVADO → salir
-2. LED → Flash rápido
-3. Ejecutar unlock_gate
-4. Esperar doorbell_led_duration  (tiempo de bloqueo para nueva apertura)
-5.    Si final carrera = ON → LED → flash lento + pitido corto (gate_open_flash_interval)
-                            índice de melodía → 0 (reseta playlist)
-   Si no → LED → 25% (reposo)
+2. Ejecutar unlock_gate
+3. Verificar FC inmediatamente:
+   SI puerta abierta → LED → flash lento + pitido (gate_open_flash)
+                       índice de melodía → 0 (reseta playlist)
+                       esperar doorbell_led_duration (cooldown)
+   SI puerta cerrada → esperar doorbell_led_duration (tiempo de bloqueo)
+                       → verificar FC otra vez
+                         SI abierta → flash lento + pitido
+                         SI cerrada → LED → 25% (reposo)
 ```
 
 El interno no reproduce melodía, no avanza el índice de melodía,
@@ -299,36 +302,36 @@ y no comparte cooldown con el externo — son independientes.
 ### 8.3 `unlock_gate`
 ```
 1. desbloqueo_normal_activo = true
-2. Relé → ON. Detener RTTTL anterior.
-3. Bucle hasta unlock_duration:
-   a. Reproducir sonido de apertura (RTTTL APERTURA)
-   b. LED sincronizado: 67ms ON / 67ms OFF (sigue patrón c,p)
-   c. Verificar FC cada 10ms:
+2. Relé → ON. Detener RTTTL anterior. LED → 100%.
+3. Reproducir RTTTL APERTURA una vez (se ejecuta en background).
+4. Bucle hasta unlock_duration:
+   a. LED sincronizado: 67ms ON / 67ms OFF
+   b. Verificar FC cada 10ms:
       - FC se abre (puerta abierta):
+        * Detener RTTTL
         * Arranca grace timer (unlock_grace_ms, default 2s)
-        * Durante grace: melodía sigue sonando
-        * Grace expira → detener RTTTL, buzzer OFF, relay sigue ON
+        * Grace expira → buzzer OFF, relay sigue ON
         * FC se cierra (puerta cerrada) → Relay → OFF. Return inmediato.
       - FC nunca se abre → timeout normal.
-4. Timeout:
+5. Timeout:
    - Si FC = OFF (puerta cerrada) O Safe Lock = OFF → Relé → OFF
    - Si Safe Lock = ON + puerta abierta → relay queda ON, FC on_release auto-lock
-5. Detener RTTTL. Apagar buzzer.
-6. LED → 25% (reposo, transición 1s)
-7. desbloqueo_normal_activo = false
+6. Detener RTTTL. Apagar buzzer.
+7. LED → 25% (reposo, transición 1s)
+8. desbloqueo_normal_activo = false
 ```
 
 > Durante el desbloqueo el LED sigue el ritmo de la melodía APERTURA. El Safe Lock (toggle vía web) evita que el lock se energice con la puerta abierta. Al cerrar la puerta, el FC on_release ejecuta auto-lock si relay está aún ON.
 
 ### 8.4 `flash_and_beep`
-Reproduce el sonido de **apertura** (RTTTL) en bucle durante el desbloqueo:
+Reproduce el sonido de **apertura** (RTTTL) una vez al inicio del desbloqueo, se ejecuta en background mientras el bucle monitorea FC y LED:
 
 ```
 d=16,o=7,b=225:c,p,c,p,...  (pitidos rápidos, se repite hasta que finalice el desbloqueo)
 ```
 
 El sonido se inicia al activar el relé y se reproduce hasta que:
-- La puerta se abre: sigue sonando `unlock_grace_ms` (default 2s), luego silencio.
+- La puerta se abre: se detiene el RTTTL, luego silencio durante grace.
 - El FC detecta cierre de puerta: fin inmediato, relay → OFF.
 - Expira `unlock_duration`: fin forzado.
 
@@ -452,10 +455,10 @@ flowchart LR
     end
 
     subgraph UTP2["📦 UTP2 — Exterior (≤8m)"]
-        P1_2["Par 1<br/>BL+NA ⚡ 12V always"]
+        P1_2["Par 1<br/>BL ⚡ 12V always / NA 🔒 12V lock"]
         P2_2["Par 2<br/>BL/V 🔸 / V 🚪"]
         P3_2["Par 3<br/>BL/AZ 🔊 / AZ 💡"]
-        P4_2["Par 4<br/>BL/MR ⬛ GND perif / MR ⬛ GND lock"]
+        P4_2["Par 4<br/>BL/MR+MR ⬛ GND común"]
     end
 
     subgraph Vestibulo["📍 Vestíbulo (local)"]
@@ -463,8 +466,9 @@ flowchart LR
         F12V["⚡🔒 Fuente 12V"]
         F12V --> P2_1 & P1_2
         F12V_GND["⚡🔒 GND"] --> P4_1
-        G5 -- control --> Rele["🔒 Relé NC (low-side)"]
-        Rele -- conmuta GND lock --> P4_2
+        G5 -- control --> Rele["🔒 Relé NC (high-side)"]
+        F12V --> ReleCOM["Relé COM"]
+        ReleNC["Relé NC"] --> P1_2
     end
 
     subgraph Paneles["📌 Paneles Remotos"]
@@ -535,57 +539,57 @@ flowchart LR
         NA["🔸 Par 2 BL/V<br/>GPIO16"]
         AZ["💡 Par 3 AZ<br/>GPIO12 PWM"]
         BLAZ["🔊 Par 3 BL/AZ<br/>GPIO14 Buzzer"]
-        P1_12V["⚡ Par 1 BL+NA<br/>+12V always"]
-        P4_GND_PERIF["⬛ Par 4 BL/MR<br/>GND periféricos"]
-        P4_GND_LOCK["⬛ Par 4 MR<br/>GND lock (vía relé NC)"]
+        P1_12V_ALWAYS["⚡ Par 1 BL<br/>+12V always"]
+        P1_12V_SW["🔒 Par 1 NA<br/>+12V lock (vía relé NC)"]
+        P4_GND["⬛ Par 4 BL/MR+MR<br/>GND común"]
     end
 
     subgraph Panel["🔸 Panel Patio"]
         NA --> Puls["🔸 Pulsador Ext<br/>NA"]
-        Puls --> P4_GND_PERIF
+        Puls --> P4_GND
 
         subgraph LedExt["💡 LED externos (patio + exterior)"]
             AZ --> RB[1kΩ] --> B[2N5551 Base]
-            P1_12V --> RL["1kΩ<br/>límitador"] --> LED1["🔵 LED Patio"]
-            P1_12V --> RL --> LED2["🔵 LED Exterior"]
+            P1_12V_ALWAYS --> RL["1kΩ<br/>límitador"] --> LED1["🔵 LED Patio"]
+            P1_12V_ALWAYS --> RL --> LED2["🔵 LED Exterior"]
             LED1 --> C[2N5551 Colector]
             LED2 --> C
-            E[2N5551 Emisor] --> P4_GND_PERIF
+            E[2N5551 Emisor] --> P4_GND
         end
 
         subgraph LockCircuit["🔒 Cerradura"]
-            P1_12V --> Pedal["🚫 Pedal Emergencia<br/>NC"]
+            P1_12V_SW --> Pedal["🚫 Pedal Emergencia<br/>NC"]
             Pedal --> Lock["🔒 Cerradura Magnética<br/>12V"]
-            Lock --> P4_GND_LOCK
+            Lock --> P4_GND
         end
 
         subgraph BuzzerPatio["🔊 Patio"]
             BLAZ --> RBZ[1kΩ] --> BB[2N5551 Base]
-            P1_12V --> R0["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12["BUZ12 +"]
+            P1_12V_ALWAYS --> R0["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12["BUZ12 +"]
             BB --> CB[2N5551 Colector] --> BZ12
-            EB[2N5551 Emisor] --> P4_GND_PERIF
+            EB[2N5551 Emisor] --> P4_GND
         end
     end
 ```
 
-> El panel **exterior** es idéntico pero **sin el buzzer** — no conecta el hilo BL/AZ del par 3. Solo lleva pulsador (par 2 BL/V), LED (par 3 AZ con su 2N5551 en el patio) y alimentación (par 1 + par 4 BL/MR). Ambos LEDs externos y la cerradura comparten el 12V del par 1.
+> El panel **exterior** es idéntico pero **sin el buzzer** — no conecta el hilo BL/AZ del par 3. Solo lleva pulsador (par 2 BL/V), LED (par 3 AZ con su 2N5551 en el patio) y alimentación (par 1 + par 4). Ambos LEDs externos y la cerradura comparten el GND común del par 4 (2 hilos paralelo).
 > El pull-up de 10kΩ a 3.3V para GPIO16 está en el **vestíbulo**, junto al MCU.
-### 12.5 Circuito — Cerradura + Pedal de Emergencia (UTP2, low-side)
+### 12.5 Circuito — Cerradura + Pedal de Emergencia (UTP2, high-side)
 
 ```mermaid
 flowchart LR
     subgraph Vestibulo["📍 Vestíbulo"]
-        F12V["⚡🔒 Fuente 12V +"] --> P1_12V["Par 1 BL+NA ⚡<br/>12V always"]
-        F12V_GND["⚡🔒 GND"] --> GND["⬛ GND<br/>Común"]
-        G5["GPIO5 🔒"] -- control --> Rele["🔒 Relé NC (low-side)"]
-        ReleCOM["🔒 Relé COM"] --> GND
-        ReleNC["🔒 Relé NC"] --> P4_GND_LOCK["Par 4 MR ⬛<br/>GND lock retorno"]
+        F12V["⚡🔒 Fuente 12V +"] --> P1_ALWAYS["Par 1 BL ⚡<br/>12V always"]
+        F12V --> ReleCOM["🔒 Relé COM"]
+        ReleNC["🔒 Relé NC"] --> P1_SW["Par 1 NA 🔒<br/>12V lock switched"]
+        G5["GPIO5 🔒"] -- control --> Rele["🔒 Relé NC (high-side)"]
+        F12V_GND["⚡🔒 GND"] --> P4_GND["Par 4 BL/MR+MR ⬛<br/>GND común"]
     end
 
     subgraph Patio["🚪 Patio"]
-        P1_12V --> Pedal["🚫 Pedal Emergencia<br/>NC"]
+        P1_SW --> Pedal["🚫 Pedal Emergencia<br/>NC"]
         Pedal --> Lock["🔒 Cerradura Magnética<br/>12V"]
-        Lock --> P4_GND_LOCK
+        Lock --> P4_GND
     end
 
     style F12V fill:#f66
@@ -593,7 +597,7 @@ flowchart LR
     style Pedal fill:#fc6
 ```
 
-Flujo: `+12V → Par 1 → Pedal NC → Cerradura → Par 4 MR → Relé NC → COM → GND`
+Flujo: `+12V → Relé COM → NC → Par 1 NA → Pedal NC → Cerradura → Par 4 (2 hilos) → GND`
 
 | 🔒 Relé NC | 🚫 Pedal NC | 🔒 Cerradura |
 |:----------:|:----------:|:------------:|
@@ -605,19 +609,24 @@ Flujo: `+12V → Par 1 → Pedal NC → Cerradura → Par 4 MR → Relé NC → 
 >
 > **Grace Duration** (configurable vía web, por defecto 2s): tiempo que sigue sonando la melodía después de que el FC detecta que la puerta se abrió. Pasado ese lapso se apaga el buzzer aunque el relay siga ON esperando el cierre. Ajustable en `http://<esp>/numbers`.
 
-### 12.6 Pull-up de pulsador externo (GPIO16)
+### 12.6 Pull-ups de pulsador externo y final carrera
 
-El pull-up de 10kΩ para GPIO16 está en el **vestíbulo**, junto al MCU. No en los paneles remotos. Viaja por UTP2 Par 2 BL/V.
+Los pull-ups de 10kΩ para GPIO16 y GPIO13 están en el **vestíbulo**, junto al MCU. No en los paneles remotos.
+
+**GPIO16** viaja por UTP2 Par 2 BL/V. **GPIO13** viaja por UTP2 Par 2 V.
 
 ```mermaid
 flowchart LR
     subgraph Vestibulo["📍 Vestíbulo"]
-        VCC["3.3V"] --> R10k["10kΩ"] --> G16["GPIO16"]
+        VCC["3.3V"] --> R10k_16["10kΩ"] --> G16["GPIO16"]
+        VCC --> R10k_13["10kΩ"] --> G13["GPIO13"]
         G16 --> PA1["UTP2 Par 2 BL/V 🔸"] --> Patio
+        G13 --> PA2["UTP2 Par 2 V 🚪"] --> Patio
     end
 
     subgraph Patio["🚪 Patio / 🌳 Exterior"]
-        PA1 --> Btn["🔸 Pulsador NA"] --> GND_P["⬛ GND (Par 4 BL/MR)"]
+        PA1 --> Btn["🔸 Pulsador NA"] --> GND_P["⬛ GND (Par 4 BL/MR+MR)"]
+        PA2 --> FC["🚪 Final Carrera NA"] --> GND_P
     end
 ```
 
@@ -669,13 +678,16 @@ flowchart TD
     subgraph MCU["🟩 MCU (Vestíbulo)"]
         A{"Sistema ACTIVADO?"}
         A -- No --> FIN_INT[Ignorar]
-        A -- Sí --> LEDON[LED → Flash rápido]
-        LEDON --> UNLOCK[Ejecutar unlock_gate]
-        UNLOCK --> COOLDOWN[Esperar doorbell_led_duration<br/>bloqueo para nueva apertura]
-        COOLDOWN --> CHECK{FC = ON?}
-        CHECK -- Sí --> FLASH[gate_open_flash<br/>flash lento + pitido]
-        CHECK -- No --> IDLE[LED → 25% reposo]
-        FLASH --> FIN_INT
+        A -- Sí --> UNLOCK[Ejecutar unlock_gate]
+        UNLOCK -> CHECK1{"FC = ON?<br/>(verific. inmediata)"}
+        CHECK1 -- Sí --> FLASH1[gate_open_flash<br/>flash lento + pitido<br/>reseta playlist]
+        FLASH1 --> COOLDOWN
+        CHECK1 -- No --> COOLDOWN
+        COOLDOWN[Esperar doorbell_led_duration<br/>bloqueo para nueva apertura]
+        COOLDOWN --> CHECK2{"FC = ON?"}
+        CHECK2 -- Sí --> FLASH2[gate_open_flash<br/>flash lento + pitido]
+        CHECK2 -- No --> IDLE[LED → 25% reposo]
+        FLASH2 --> FIN_INT
         IDLE --> FIN_INT
     end
 
@@ -688,9 +700,8 @@ flowchart TD
     end
 
     subgraph PAN["🟧 SALÓN / VESTÍBULO / PATIO"]
-        LED[LED → Flash rápido]
         BEEP[RTTTL Apertura]
-        GRACE[RTTTL sigue unlock_grace_ms<br/>luego silencio]
+        GRACE[Silencio unlock_grace_ms<br/>tras detener RTTTL]
         LED2[LED → Flash lento + pitido]
     end
 
@@ -710,26 +721,25 @@ flowchart TD
     subgraph MCU["🟩 MCU (Vestíbulo)"]
         START[Inicio unlock_gate]
         START --> FLAG[desbloqueo_normal_activo = true]
-        FLAG --> RELAY_ON[Relé → ON]
-        RELAY_ON --> LOOP["Bucle<br/>¿Puerta se abrió?"]
-        LOOP -- No --> RTTTL[Reproducir RTTTL Apertura]
-        RTTTL --> LEDSEQ[LED 67ms ON / 67ms OFF]
+        FLAG --> RELAY_ON[Relé → ON<br/>Detener RTTTL anterior]
+        RELAY_ON --> PLAY[RTTTL Apertura ← ejecución única]
+        PLAY --> LOOP["Bucle<br/>¿FC se abrió o pasó unlock_duration?"]
+        LOOP -- No --> LEDSEQ[LED 67ms ON / 67ms OFF]
         LEDSEQ --> CHK_TIMEOUT["¿Pasó unlock_duration?"]
         CHK_TIMEOUT -- No --> LOOP
         CHK_TIMEOUT -- Sí --> TOUT{"Safe Lock ON<br/>Y puerta<br/>sigue abierta?"}
         TOUT -- Sí --> HOLD[Relé queda ON<br/>→ FC on_release auto-lock]
         TOUT -- No --> LOCK[Relé → OFF]
 
-        LOOP -- Sí --> GRACE[Arranca grace timer<br/>unlock_grace_ms]
+        LOOP -- Sí --> STOP_MELO[Detener RTTTL<br/>Buzzer OFF]
+        STOP_MELO --> GRACE[Arranca grace timer<br/>unlock_grace_ms (sin sonido)]
         GRACE --> GRACE_LOOP{"Grace expiró?"}
-        GRACE_LOOP -- No --> KEEP_MELO[RTTTL sigue sonando]
-        KEEP_MELO --> GRACE_LOOP
-        GRACE_LOOP -- Sí --> SILENCE[Buzzer OFF]
-        SILENCE --> WAIT_CLOSE{"FC se cerró?"}
+        GRACE_LOOP -- No --> GRACE_LOOP
+        GRACE_LOOP -- Sí --> WAIT_CLOSE{"FC se cerró?"}
         WAIT_CLOSE -- No --> WAIT_CLOSE
         WAIT_CLOSE -- Sí --> LOCK
 
-        HOLD --> STOP[Detener RTTTL]
+        HOLD --> STOP[Fin → limpieza]
         LOCK --> STOP
         STOP --> LEDREPO[LED → 25% reposo]
         LEDREPO --> UNFLAG[desbloqueo_normal_activo = false]
@@ -743,18 +753,18 @@ flowchart TD
     end
 
     subgraph PAN["🟧 SALÓN / VESTÍBULO / PATIO"]
-        BEEP[RTTTL Apertura sonando]
+        BEEP[RTTTL Apertura<br/>suena una sola vez<br/>en background]
         SILENCIO[Buzzer OFF]
-        GRACE_SOUND[RTTTL suena durante grace<br/>luego silencio]
+        SILENCIO_GRACE[Silencio durante grace]
     end
 
     RELAY_ON --> RELE
     LOCK --> RELE2
     ABRE --> LOOP
     CIERRA --> WAIT_CLOSE
-    RTTTL --> BEEP
-    KEEP_MELO --> GRACE_SOUND
-    STOP --> SILENCIO
+    PLAY --> BEEP
+    STOP_MELO --> SILENCIO
+    GRACE --> SILENCIO_GRACE
 ```
 
 ### 12.10 Swimlane — Detección de emergencia
