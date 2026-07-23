@@ -140,10 +140,55 @@ Relé **conmuta +12V** (high-side switching).
 - **Pulsación larga** (> 4s): si sistema DESACTIVADO → `enable_system`
 - **Pulsación muy larga** (> 8s): si sistema ACTIVADO → `disable_system`
 
+```yaml
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO4
+      inverted: true
+      mode: INPUT_PULLUP
+    id: pulsador_interno
+    filters:
+      - delayed_on_off: 50ms
+    on_click:
+      - min_length: 50ms
+        max_length: 3900ms
+        then:
+          - lambda: |-
+              if (id(system_active))
+                id(internal_press_script).execute();
+      - min_length: 4100ms
+        max_length: 8000ms
+        then:
+          - lambda: |-
+              if (!id(system_active))
+                id(enable_system_script).execute();
+      - min_length: 8100ms
+        max_length: 60000ms
+        then:
+          - lambda: |-
+              if (id(system_active))
+                id(disable_system_script).execute();
+```
+
 ### 4.2 Pulsadores Externos (panel de timbre)
 - **Pin**: GPIO16, `INPUT` con pull-up ext. 10kΩ. Paralelo patio + exterior.
 - **Pulsación corta** (< 4s): ejecuta `external_press` (solo timbre, NO desbloquea)
 - Pulsaciones largas ignoradas (solo el panel de control interno tiene función de mantenimiento)
+
+```yaml
+binary_sensor:
+  - platform: gpio
+    pin: GPIO16
+    id: pulsador_externo
+    filters:
+      - delayed_on_off: 50ms
+    on_click:
+      - min_length: 50ms
+        max_length: 3900ms
+        then:
+          - script.execute: external_press_script
+```
 
 ### 4.3 Relé
 - GPIO5. **ID**: `lock_relay`
@@ -152,11 +197,50 @@ Relé **conmuta +12V** (high-side switching).
 - **ON** → NC abierto → lock sin 12V → cerradura sin corriente → puerta desbloqueada
 - NA no se usa
 
+```yaml
+output:
+  - platform: gpio
+    pin: GPIO5
+    id: lock_relay
+```
+
 ### 4.4 Final de Carrera
 - GPIO13. INPUT con pull-up externo 10kΩ a 3.3V en el vestíbulo (junto al MCU). No usar `INPUT_PULLUP` interno (30-100kΩ): su alta impedancia es más susceptible a ruido acoplado en 8m de cable UTP.
 - **ON**: puerta abierta. **OFF**: puerta cerrada.
 - Si se activa con relé OFF → apertura por emergencia
 - **Al cerrar la puerta** (FC → OFF): si el LED está en flash lento (estado puerta abierta), vuelve a 25% reposo. No afecta al cooldown externo.
+
+```yaml
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO13
+      mode: INPUT
+    id: final_carrera
+    filters:
+      - delayed_on_off: 100ms
+    on_press:
+      then:
+        - lambda: |-
+            if (!id(desbloqueo_normal_activo) && !id(lock_relay_on))
+              id(emergency_alert_script).execute();
+    on_release:
+      then:
+        - script.stop: emergency_alert_script
+        - script.stop: gate_open_flash_script
+        - lambda: |-
+            if (id(system_active) && !id(desbloqueo_normal_activo)
+                && id(safe_lock_enabled).state && id(lock_relay_on)) {
+              id(lock_relay).turn_off();
+              id(lock_relay_on) = false;
+            }
+        - light.turn_off: led_light
+        - light.turn_on:
+            id: led_light
+            brightness: 25%
+            transition_length: 1s
+        - output.turn_off: buzzer_output
+```
 
 ### 4.5 Buzzer Musical (RTTTL)
 - GPIO14 (PWM) → Par 3 BL/AZ de **ambos UTPs**. La señal PWM 3.3V viaja en paralelo al salón (UTP1) y al patio (UTP2) hacia la base de cada 2N5551 local. Cada transistor conmuta 12V local al BUZ12.
@@ -180,6 +264,18 @@ Todos los sonidos del sistema usan RTTTL (definidos inline en el YAML):
 - Al terminar el cooldown del desbloqueo interno (doorbell_led_duration), si la puerta sigue abierta (FC=ON), el índice se resetea a la melodía 1.
 - Durante el desbloqueo suena el sonido RTTTL de apertura, no melodía.
 - La alarma de emergencia usa RTTTL.
+
+```yaml
+rtttl:
+  output: buzzer_output
+  id: buzzer_rtttl
+
+output:
+  - platform: esp8266_pwm
+    pin: GPIO14
+    frequency: 2000Hz
+    id: buzzer_output
+```
 
 ### 4.6 LEDs Estado
 - GPIO12 PWM → Par 3 AZ de **ambos UTPs**. Señal común a las 4 zonas (salón por UTP1, patio/exterior por UTP2).
@@ -208,6 +304,36 @@ UTP2 Par 3 AZ ──┤1kΩ├── base 2N5551
   - *Latido suave*: oscilación 50%–100% con transición de 1s
   - *Parpadeo rápido (unlock)*: 67ms ON / 67ms OFF, sincronizado con melodía APERTURA
   - *Flash lento*: duración configurable (`gate_open_flash_interval`), acompañado de pitido corto
+
+```yaml
+output:
+  - platform: esp8266_pwm
+    pin: GPIO12
+    frequency: 1000Hz
+    id: led_output
+
+light:
+  - platform: monochromatic
+    output: led_output
+    id: led_light
+    name: "LED Estado"
+    default_transition_length: 0s
+    effects:
+      - pulse:
+          name: "Latido Suave"
+          transition_length: 1s
+          update_interval: 1s
+          min_brightness: 50%
+          max_brightness: 100%
+      - strobe:
+          name: "Flash Rapido"
+          colors:
+            - state: true
+              brightness: 100%
+              duration: 400ms
+            - state: false
+              duration: 400ms
+```
 
 ## 5. Estado del Sistema
 
@@ -282,6 +408,38 @@ Si transcurren 60s sin una nueva pulsación externa, el timer resetea
 el índice de melodía a 0. Si ocurre una nueva pulsación antes, el
 timer se cancela (paso 4) y se reinicia al final del cooldown (paso 11).
 
+```yaml
+  - id: external_press_script
+    mode: single
+    then:
+      - if:
+          condition:
+            lambda: 'return id(system_active)
+                     && !id(cooldown_externo_activo);'
+          then:
+            - lambda: 'id(cooldown_externo_activo) = true;'
+            - script.stop: timer_reset_melodia
+            - output.turn_off: buzzer_output
+            - lambda: |-
+                switch (id(melody_index)) {
+                  case 0: id(buzzer_rtttl).play("d=8,o=6,b=140:..."); break;
+                  case 1: ...  // 4 melodías rotativas
+                }
+            - light.turn_on:
+                id: led_light
+                effect: "Latido Suave"
+                brightness: 100%
+            - delay: !lambda 'return id(doorbell_led_duration_ms);'
+            - light.turn_off: led_light
+            - light.turn_on:
+                id: led_light
+                brightness: 25%
+                transition_length: 1s
+            - lambda: 'id(cooldown_externo_activo) = false;'
+            - lambda: 'id(melody_index) = (id(melody_index) + 1) % 4;'
+            - script.execute: timer_reset_melodia
+```
+
 ### 8.2 `internal_press` (salón / vestíbulo — abrir puerta)
 ```
 1. Si sistema DESACTIVADO → salir
@@ -298,6 +456,39 @@ timer se cancela (paso 4) y se reinicia al final del cooldown (paso 11).
 
 El interno no reproduce melodía, no avanza el índice de melodía,
 y no comparte cooldown con el externo — son independientes.
+
+```yaml
+  - id: internal_press_script
+    mode: single
+    then:
+      - if:
+          condition:
+            lambda: 'return id(system_active);'
+          then:
+            - script.stop: emergency_alert_script
+            - output.turn_off: buzzer_output
+            - script.execute: unlock_gate_script
+            - if:
+                condition:
+                  binary_sensor.is_on: final_carrera
+                then:
+                  - lambda: 'id(melody_index) = 0;'
+                  - script.execute: gate_open_flash_script
+                  - delay: !lambda 'return id(doorbell_led_duration_ms);'
+                else:
+                  - delay: !lambda 'return id(doorbell_led_duration_ms);'
+                  - if:
+                      condition:
+                        binary_sensor.is_on: final_carrera
+                      then:
+                        - script.execute: gate_open_flash_script
+                      else:
+                        - light.turn_off: led_light
+                        - light.turn_on:
+                            id: led_light
+                            brightness: 25%
+                            transition_length: 1s
+```
 
 ### 8.3 `unlock_gate`
 ```
@@ -323,6 +514,49 @@ y no comparte cooldown con el externo — son independientes.
 
 > Durante el desbloqueo el LED sigue el ritmo de la melodía APERTURA. El Safe Lock (toggle vía web) evita que el lock se energice con la puerta abierta. Al cerrar la puerta, el FC on_release ejecuta auto-lock si relay está aún ON.
 
+El RTTTL APERTURA se genera dinámicamente en lambda para cubrir exactamente `unlock_duration_ms`:
+
+```yaml
+          // play RTTTL with exact duration matching unlock_duration_ms
+          {
+            int total_notes = (id(unlock_duration_ms) / 67) + 4;
+            std::string rtttl = "d=16,o=7,b=225:";
+            for (int i = 0; i < total_notes; i++) {
+              rtttl += (i % 2 == 0) ? "c" : "p";
+              if (i < total_notes - 1) rtttl += ",";
+            }
+            id(buzzer_rtttl).play(rtttl);
+          }
+```
+
+El bucle principal monitorea FC y sincroniza el LED con `yield()` para alimentar WDT:
+
+```yaml
+          while (millis() - start < timeout) {
+            yield();  // mantiene WiFi y loop principal
+            unsigned long now = millis();
+
+            if (!door_was_opened && id(final_carrera).state) {
+              door_was_opened = true;
+              grace_start = now;
+              id(buzzer_rtttl).stop();
+              id(buzzer_output).turn_off();
+            }
+
+            if (door_was_opened && !id(final_carrera).state) {
+              // door closed → lock immediately
+              id(lock_relay).turn_off();
+              id(lock_relay_on) = false;
+              ...
+              return;
+            }
+            // LED toggling at 67ms
+            if (now - last_toggle >= 67) { ... }
+
+            delay(10);
+          }
+```
+
 ### 8.4 `flash_and_beep`
 Reproduce el sonido de **apertura** (RTTTL) una vez al inicio del desbloqueo, se ejecuta en background mientras el bucle monitorea FC y LED. La cadena RTTTL se genera dinámicamente en lambda con el número exacto de notas (`c,p`) para cubrir `unlock_duration_ms`, evitando una cadena hardcodeada de cientos de caracteres:
 
@@ -337,6 +571,26 @@ El sonido se inicia al activar el relé y se reproduce hasta que:
 
 El LED parpadea sincronizado: 67ms ON (nota) / 67ms OFF (silencio). Tras el desbloqueo, el LED vuelve a 25% y `internal_press` gestiona el estado final.
 
+```yaml
+  - id: gate_open_flash_script
+    mode: single
+    then:
+      - while:
+          condition:
+            binary_sensor.is_on: final_carrera
+          then:
+            - light.turn_on:
+                id: led_light
+                brightness: 100%
+                transition_length: 0s
+            - lambda: 'id(buzzer_rtttl).play("d=8,o=5,b=300:b");'
+            - delay: 100ms
+            - light.turn_off:
+                id: led_light
+                transition_length: 0s
+            - delay: !lambda 'return id(gate_open_flash_interval_ms) - 100;'
+```
+
 ### 8.5 `enable_system`
 ```
 1. Sistema → ACTIVADO
@@ -346,6 +600,20 @@ El LED parpadea sincronizado: 67ms ON (nota) / 67ms OFF (silencio). Tras el desb
 4. Relé → OFF (cerradura bloqueada)
 ```
 
+La secuencia de 4 flashes usa la acción nativa `repeat`:
+
+```yaml
+      - lambda: 'id(buzzer_rtttl).play("d=4,o=5,b=320:c,16p,e,16p,g,16p,c6");'
+      - repeat:
+          count: 4
+          then:
+            - light.turn_on: { id: led_light, brightness: 100% }
+            - delay: 190ms
+            - light.turn_off: led_light
+            - delay: 45ms
+      - light.turn_on: { id: led_light, brightness: 25% }
+```
+
 ### 8.6 `disable_system`
 ```
 1. Sistema → DESACTIVADO
@@ -353,6 +621,21 @@ El LED parpadea sincronizado: 67ms ON (nota) / 67ms OFF (silencio). Tras el desb
    d=4,o=5,b=320:c6,16p,g,16p,e,16p,c
 3. LED: 4 flashes sincronizados (190ms on / 45ms off) → OFF
 4. Relé → ON permanentemente (cerradura desbloqueada)
+```
+
+Mismo patrón de 4 flashes que `enable_system`, pero con arpegio descendente y sin volver a 25%:
+
+```yaml
+      - lambda: 'id(buzzer_rtttl).play("d=4,o=5,b=320:c6,16p,g,16p,e,16p,c");'
+      - repeat:
+          count: 4
+          then:
+            - light.turn_on: { id: led_light, brightness: 100% }
+            - delay: 190ms
+            - light.turn_off: led_light
+            - delay: 45ms
+      - output.turn_on: lock_relay
+      - lambda: 'id(lock_relay_on) = true;'
 ```
 
 ### 8.7 `emergency_alert`
@@ -368,24 +651,85 @@ El LED parpadea sincronizado: 67ms ON (nota) / 67ms OFF (silencio). Tras el desb
    Si no → LED → 25% (reposo), silencio
 ```
 
+```yaml
+  - id: emergency_alert_script
+    mode: single
+    then:
+      - rtttl.stop: id: buzzer_rtttl
+      - output.turn_off: buzzer_output
+      - lambda: 'id(emergency_cycle) = 0;'
+      - while:
+          condition:
+            and:
+              - lambda: 'return id(emergency_cycle) < 12;'
+              - binary_sensor.is_on: final_carrera
+          then:
+            - lambda: 'id(buzzer_rtttl).play("d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p");'
+            - lambda: |
+                for (int i = 0; i < 4 && id(final_carrera).state; i++) {
+                  // LED 1067ms ON
+                  { auto call = id(led_light).make_call();
+                    call.set_brightness(1.0f);
+                    call.set_transition_length(0);
+                    call.perform(); }
+                  unsigned long t = millis();
+                  while (millis() - t < 1067 && id(final_carrera).state)
+                    { yield(); delay(10); }
+                  // LED 133ms OFF
+                  ...
+                }
+            - lambda: 'id(emergency_cycle)++;'
+      - output.turn_off: buzzer_output
+      - if:
+          condition: binary_sensor.is_on: final_carrera
+          then: - script.execute: gate_open_flash_script
+          else:
+            - light.turn_on: { id: led_light, brightness: 25%, transition_length: 1s }
+```
+
 ## 9. Comunicación
 
-| Método | Propósito |
-|--------|-----------|
-| WiFi | Red local + AP respaldo |
-| Web Server | http://<ip>/ — control manual |
-| OTA | Actualizaciones |
+| Método | Propósito | Endpoint |
+|--------|-----------|----------|
+| WiFi | Red local + AP respaldo | — |
+| Web Server | Panel de control | `http://<ip>/` |
+| | Safe Lock toggle | `http://<ip>/switches` |
+| | Sliders de tiempo | `http://<ip>/numbers` |
+| OTA | Actualizaciones | — |
 
 Sin HA, API nativa ni MQTT.
 
 ## 10. Parámetros
 
-| Parámetro | Default | Configurable | Descripción |
-|-----------|---------|-------------|-------------|
-| `unlock_duration` | 5s | No | Tiempo que la cerradura permanece desbloqueada |
-| `doorbell_led_duration` | 45s | Web (10–120s) | Duración del latido suave del LED al pulsar timbre |
-| `gate_open_flash_interval` | 5s | Web (1–30s) | Intervalo de flasheo del LED cuando puerta está abierta |
-| `melody_reset_timeout` | 60s | No | Tiempo sin pulsaciones externas tras el cooldown que resetea el índice de melodía a 0 |
+### Entities web (`/numbers`)
+
+| Parámetro | ID | Default | Rango | Descripción |
+|-----------|-----|---------|-------|-------------|
+| Doorbell LED Duration | `doorbell_led_duration` | 45s | 10–120s | Duración del latido suave del LED al pulsar timbre |
+| Gate Open Flash Interval | `gate_open_flash_interval` | 5s | 1–30s | Intervalo de flasheo del LED cuando puerta está abierta |
+| Grace Duration | `unlock_grace_duration` | 2s | 0.5–10s | Tiempo que sigue sonando tras detectar apertura |
+| Unlock Duration | `unlock_duration` | 5s | 1–10s | Tiempo que la cerradura permanece desbloqueada |
+
+### Globals del sistema
+
+| Variable | Tipo | Default | Propósito |
+|----------|------|---------|-----------|
+| `system_active` | bool | `true` | Sistema habilitado (true) o en mantenimiento (false) |
+| `lock_relay_on` | bool | `false` | Estado actual del relé (evita leer GPIO en loop) |
+| `desbloqueo_normal_activo` | bool | `false` | Flag para diferenciar apertura normal vs emergencia |
+| `cooldown_externo_activo` | bool | `false` | Cooldown del pulsador externo (independiente del LED) |
+| `melody_index` | int | `0` | Índice de melodía actual (0-3, ciclo) |
+| `emergency_cycle` | int | `0` | Contador de ciclos de emergencia (corta en 12) |
+| `unlock_duration_ms` | int | `5000` | Duración del pulso de desbloqueo (ms) |
+| `doorbell_led_duration_ms` | int | `45000` | Duración del LED de timbre (ms) |
+| `gate_open_flash_interval_ms` | int | `5000` | Intervalo de flasheo de puerta abierta (ms) |
+| `unlock_grace_ms` | int | `2000` | Gracia tras abrir la puerta (ms) |
+
+### Otros
+
+| Parámetro | Default | Descripción |
+|-----------|---------|-------------|
+| `melody_reset_timeout` | 60s | Tiempo sin pulsaciones externas que resetea el índice de melodía a 0 |
 
 ## 11. Repertorio de Melodías (RTTTL)
 
@@ -400,7 +744,7 @@ desbloqueo interno si la puerta sigue abierta (FC=ON).
 | 2 | `d=8,o=6,b=140:c,g,c7,4c7,16c7,16p,b,c7,g,2g,p` |
 | 3 | `d=4,o=4,b=100:c7,b,2a,16a,16p,a,d7,b,2g,p` |
 | 4 | `d=4,o=4,b=100:a,b,c7,g,f,e,g,4d,16d,16p,c,2c,p` |
-| Apertura | `d=16,o=7,b=225:c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c,p,c`|
+| Apertura | Generado dinámicamente — ver sección 14.3 |
 | Emergencia | `d=1,o=6,b=225:c,8p,c,8p,c,8p,c,8p` |
 | ACTIVAR | `d=8,o=5,b=200:8c,8e,8g,8c6,8e6,8d6,8c6,4g` |
 | DESACTIVAR | `d=8,o=5,b=200:8c6,8g,8e,8c,8a4,8g,8e,4c` |
