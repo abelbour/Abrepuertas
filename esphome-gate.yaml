@@ -118,6 +118,7 @@ binary_sensor:
             if (id(system_active) && !id(desbloqueo_normal_activo) && id(safe_lock_enabled).state && id(lock_relay).state) {
               id(lock_relay).turn_off();
             }
+        - light.turn_off: led_light
         - light.turn_on:
             id: led_light
             brightness: 25%
@@ -219,6 +220,7 @@ script:
                 effect: "Latido Suave"
                 brightness: 100%
             - delay: !lambda 'return id(doorbell_led_duration_ms);'
+            - light.turn_off: led_light
             - light.turn_on:
                 id: led_light
                 brightness: 25%
@@ -235,10 +237,6 @@ script:
             lambda: 'return id(system_active);'
           then:
             - script.stop: emergency_alert_script
-            - light.turn_on:
-                id: led_light
-                effect: "Flash Rapido"
-                brightness: 100%
             - output.turn_off: buzzer_output
             - script.execute: unlock_gate_script
             - delay: !lambda 'return id(doorbell_led_duration_ms);'
@@ -249,6 +247,7 @@ script:
                   - lambda: 'id(melody_index) = 0;'
                   - script.execute: gate_open_flash_script
                 else:
+                  - light.turn_off: led_light
                   - light.turn_on:
                       id: led_light
                       brightness: 25%
