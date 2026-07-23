@@ -1,10 +1,12 @@
 esphome:
   name: esphome-gate
-  board: nodemcuv2
   on_boot:
     priority: 600
     then:
       - output.turn_on: lock_relay
+
+esp8266:
+  board: nodemcuv2
 
 wifi:
   ap:
