@@ -4,7 +4,8 @@ Sistema autónomo para control de acceso de puerta con timbre musical,
 apertura temporizada, señalización visual y audible, y corte de
 emergencia físico. Basado en NodeMCU ESP8266 con ESPHome, sin
 dependencia de Home Assistant ni MQTT. Todo el cableado entre zonas
-sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
+sobre dos UTPs Cat5 de 4 pares: uno para interior (salón) y otro para
+exterior (patio), sin cables adicionales.
 
 ## 1. Resumen de Hardware
 
@@ -13,7 +14,7 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | 🧠 | NodeMCU ESP8266 | Microcontrolador ejecutando ESPHome |
 | ⚡ | Fuente 5V | Alimentación NodeMCU (local en vestíbulo) |
 | ⚡🔒 | Fuente 12V | Alimentación cerradura + LEDs (local en vestíbulo) |
-| 🔒 | Relé | Conmuta 12V de la cerradura (NC = cerrada) |
+| 🔒 | Relé | Conmuta GND de la cerradura (NC = cerrada) |
 | 🔒 | Cerradura Magnética | Mantiene la puerta cerrada mientras recibe 12V |
 | 🔊 | Buzzer Musical (RTTTL) | Zumbador piezoeléctrico — melodía y pitidos. ×3 unidades (salón con pot. volumen serie) |
 | 🔹 | Pulsadores Internos (×2) | Salón y vestíbulo — GPIO4 en paralelo |
@@ -43,10 +44,10 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | [Resistencia 1kΩ](https://tienda.lega.ar/producto/res0251k-resistencia-025-w-1k-ohms) | 8 | $165,55 | $1.324,40 | 1/4W, carbon film (base + LED externos 12V) |
 | Resistencia 10kΩ | 1 | $165,55 | $165,55 | 1/4W, carbon film (pull-up GPIO16) |
 | [Potenciómetro 10kΩ](https://tienda.lega.ar/producto/pot710k-potenciometro---lineal-mignon-eje-grueso-10k-ohm) | 1 | $2.091,95 | $2.091,95 | Lineal, reóstato, 6mm |
-| [Cable UTP Cat5 (x 1m)](https://tienda.lega.ar/producto/cable-utp-interior-cat5-x-metro-5e100-) | 1 | $406,35 | $406,35 ✅ | 4 pares, sólido, CCA o cobre |
+| [Cable UTP Cat5 (x 1m)](https://tienda.lega.ar/producto/cable-utp-interior-cat5-x-metro-5e100-) | 2 | $406,35 | $812,70 ✅ | 4 pares, sólido, cobre (1 interior + 1 exterior) |
 | [Placa perforada 50×50mm](https://tienda.lega.ar/producto/50x50--plaqueta-simple-faz-50x50-fenolico) | 1 | $918,05 | $918,05 | 7×5 cm o similar |
 | [Cables dupont H-H 40P 20cm](https://tienda.lega.ar/producto/chh20-cable-dupont-hembra-hembra-40p-20-cm-) | — | $2.648,80 | $2.648,80 ✅ | Varios, 22AWG |
-| **Total general** | | | **$127.608,95** | (19 cotizados, todos cubiertos) |
+| **Total general** | | | **$128.015,30** | (20 cotizados, todos cubiertos) |
 | **Subtotal a comprar** | | | **$35.984,55** | (excluye ✅) |
 
 ## Distribución Física
@@ -77,28 +78,48 @@ flowchart LR
         EP["Panel de timbre<br/>─────────<br/>🔸 Pulsador Ext (GPIO16)<br/>💡 LED 3V (GPIO12)"]
     end
 
-    Salon ---|UTP Cat5| Vestibulo ---|UTP Cat5| Patio ---|UTP Cat5| Exterior
+    Salon ---|UTP1 (interior)| Vestibulo
+    Vestibulo ---|UTP2 (exterior, ≤8m)| Patio ---|UTP2| Exterior
     MCU -.-> VP
 ```
 
-## Cableado (UTP Cat5, 4 pares)
+## Cableado (2 × UTP Cat5, 4 pares c/u)
 
-| Par | Hilo | Señal | Emoji | Destino | Grupo |
-|-----|------|-------|-------|---------|-------|
-| 1 | BL | GPIO4 (pulsador interno) | 🔹 | Salón | Entradas |
-| 1 | NA | GPIO16 (pulsador externo) | 🔸 | Patio + Ext. | Entradas |
-| 2 | BL/V | GPIO13 (final carrera) | 🚪 | Patio | Patio |
-| 2 | V | Cerradura 12V (vía relé NC) | 🔒 | Patio | Patio |
-| 3 | BL/AZ | GPIO14 (buzzer musical) | 🔊 | Salón + Vest. + Patio | Audio |
-| 3 | AZ | GPIO12 (PWM LEDs) | 💡 | Todas | Broadcast |
-| 4 | BL/MR | **GND común** | ⬛ | Todas | Power |
-| 4 | MR | **12V siempre vivo** | ⚡ | Todas | Power |
+Distancia máxima vestíbulo → patio: **8 metros**. Distancia vestíbulo → salón: <5m.
 
-- Par 1 = botones, par 2 = patio (FC + cerradura), par 3 = audio (BL/AZ) + broadcast LED (AZ), par 4 = alimentación
-- Los paneles de salón, vestíbulo y patio llevan buzzer (GPIO14 por par 3 BL/AZ → 2N5551 → BUZ12 12V). El de salón adicionalmente tiene un potenciómetro de 10kΩ como divisor en la base del 2N5551 para ajuste local de volumen. El exterior no lleva buzzer.
-- 12V viaja por par 4 MR junto con GND (par 4 BL/MR) — mejor para la fuente
-- Relé NC en vestíbulo conmuta 12V desde par 4 MR hacia par 2 V → cerradura en patio
-- Cada panel solo pela los pares que necesita (ej. exterior solo pares 1, 3 AZ, 4 — sin BL/AZ)
+### UTP1 — Interior (vestíbulo ↔ salón)
+
+| Par | Hilo | Señal | Emoji | Grupo |
+|-----|------|-------|-------|-------|
+| 1 | BL | GPIO4 (pulsador interno) | 🔹 | Entradas |
+| 1 | NA | (libre) | | |
+| 2 | BL/V | **12V** (alimentación salón, paralelo con V) | ⚡ | Power |
+| 2 | V | **12V** (alimentación salón, paralelo con BL/V) | ⚡ | Power |
+| 3 | BL/AZ | GPIO14 (buzzer musical) | 🔊 | Audio |
+| 3 | AZ | GPIO12 (PWM LEDs) | 💡 | Broadcast |
+| 4 | BL/MR | **GND** (retorno salón, paralelo con MR) | ⬛ | Power |
+| 4 | MR | **GND** (retorno salón, paralelo con BL/MR) | ⬛ | Power |
+
+### UTP2 — Exterior (vestíbulo ↔ patio, ≤8m, cobre sólido)
+
+Relé **conmuta GND** (low-side switching).
+
+| Par | Hilo | Señal | Emoji | Corriente | Grupo |
+|:---:|:----:|-------|:-----:|:---------:|-------|
+| 1 | BL | **12V always** (paralelo con NA) | ⚡ | 1.5A + 0.3A | Power |
+| 1 | NA | **12V always** (paralelo con BL) | ⚡ | 1.5A + 0.3A | Power |
+| 2 | BL/V | GPIO16 (pulsador externo) | 🔸 | <1mA | Entradas |
+| 2 | V | GPIO13 (final carrera) | 🚪 | <1mA | Patio |
+| 3 | BL/AZ | GPIO14 (buzzer patio) | 🔊 | <1mA | Audio |
+| 3 | AZ | GPIO12 (PWM LEDs externos) | 💡 | <1mA | Broadcast |
+| 4 | BL/MR | **GND periféricos** (directo) | ⬛ | 0.3A | Power |
+| 4 | MR | **GND lock retorno** (vía relé NC) | ⬛ | **1.5A** | Power |
+
+- 12V viaja por Par 1 (2 hilos paralelo) → alimenta lock + periféricos exterior
+- Relé NC en vestíbulo conmuta GND: OFF = retorno lock a GND (cerrado), ON = retorno lock abierto (desbloqueado)
+- GND periféricos (Par 4 BL/MR) va directo a GND, no pasa por el relé
+- Caída de tensión a 8m con cobre: lock recibe ~10.6V (~88% fuerza) ✅✅
+- Cada panel solo pela los pares que necesita (ej. exterior solo UTP2 pares 1, 2, 3 AZ, 4 BL/MR)
 
 ## 3. Asignación de Pines
 
@@ -108,7 +129,7 @@ flowchart LR
 | GPIO16 | 🔸 | Pulsadores externos (patio + exterior, paralelo) | Entrada (pull-up ext.) |
 | GPIO12 | 💡 | PWM LEDs — señal común a todas las zonas | Salida (PWM) |
 | GPIO14 | 🔊 | Buzzer Musical (×3: salón, vestíbulo, patio; salón con pot. serie) | Salida (PWM 2000 Hz, RTTTL) |
-| GPIO5 | 🔒 | Relé de Cerradura (NC → lock, NA → libre) | Salida (relé) |
+| GPIO5 | 🔒 | Relé de Cerradura low-side (NC → GND lock, NA → libre) | Salida (relé) |
 | GPIO13 | 🚪 | Final de Carrera + detección emergencia | Entrada (pull-up, NA) |
 
 ## 4. Definición de Componentes
@@ -126,8 +147,9 @@ flowchart LR
 
 ### 4.3 Relé
 - GPIO5. **ID**: `lock_relay`
-- **OFF** → NC cerrado → cerradura recibe 12V → puerta cerrada
-- **ON** → NC abierto → cerradura pierde 12V → puerta desbloqueada
+- Conmutación **low-side**: el relé abre/cierra el retorno GND de la cerradura.
+- **OFF** → NC cerrado → retorno GND del lock a masa → cerradura recibe 12V → puerta cerrada
+- **ON** → NC abierto → retorno GND del lock abierto → cerradura sin corriente → puerta desbloqueada
 - NA no se usa
 
 ### 4.4 Final de Carrera
@@ -137,8 +159,8 @@ flowchart LR
 - **Al cerrar la puerta** (FC → OFF): si el LED está en flash lento (estado puerta abierta), vuelve a 25% reposo. No afecta al cooldown externo.
 
 ### 4.5 Buzzer Musical (RTTTL)
-- GPIO14 (PWM) → Par 3 BL/AZ. El UTP transporta señal PWM 3.3V hacia la base del 2N5551 en cada panel. Cada transistor conmuta 12V local (Par 4 MR) al BUZ12.
-- Los paneles de salón, vestíbulo y patio tienen su propio 2N5551 local que recibe la señal de BL/AZ y conmuta 12V al BUZ12 (el exterior no lleva buzzer).
+- GPIO14 (PWM) → Par 3 BL/AZ de **ambos UTPs**. La señal PWM 3.3V viaja en paralelo al salón (UTP1) y al patio (UTP2) hacia la base de cada 2N5551 local. Cada transistor conmuta 12V local al BUZ12.
+- Los paneles de salón, vestíbulo y patio tienen su propio 2N5551 local que recibe la señal de BL/AZ y conmuta 12V al BUZ12 (el exterior no lleva buzzer). El salón toma 12V de UTP1 Par 2, el patio de UTP2 Par 1.
 - En cada panel, entre 12V y el buzzer hay un placeholder para resistencia de atenuación (0Ω = cable directo por ahora):
 ```
                  ┌─── R_atenuación (0Ω placeholder) ─── BUZ12(+) ── BUZ12(−)
@@ -160,24 +182,24 @@ Todos los sonidos del sistema usan RTTTL (definidos inline en el YAML):
 - La alarma de emergencia usa RTTTL.
 
 ### 4.6 LEDs Estado
-- GPIO12 PWM → UTP par 3 AZ. Señal común a las 4 zonas.
+- GPIO12 PWM → Par 3 AZ de **ambos UTPs**. Señal común a las 4 zonas (salón por UTP1, patio/exterior por UTP2).
 - Cada panel tiene su propia conversión local. Los externos comparten un mismo 2N5551 en el panel del patio:
 
-**Paneles internos (salón, vestíbulo)** — Tira LED 12V transistorizada:
+**Paneles internos (salón, vestíbulo)** — Tira LED 12V transistorizada (alimentación por UTP1):
 ```
-UTP par 3 AZ ──┤1kΩ├── base 2N5551
-UTP par 4 MR (12V) ── tira LED (+) ── tira LED (−) ── colector
-UTP par 4 BL/MR (GND) ── emisor
+UTP1 Par 3 AZ ──┤1kΩ├── base 2N5551
+UTP1 Par 2 (12V) ── tira LED (+) ── tira LED (−) ── colector
+UTP1 Par 4 (GND) ── emisor
 ```
 (La tira LED incluye resistor limitador serie incorporado.)
 
-**Paneles externos (patio, exterior)** — LED con driver 12V (ambos LEDs en paralelo, mismo 2N5551):
+**Paneles externos (patio, exterior)** — LED con driver 12V (ambos LEDs en paralelo, mismo 2N5551, alimentación por UTP2):
 ```
-12V ──┤1kΩ├── LED(+) ── LED(–) ─┐
-                        ┌────────┤ colector 2N5551
-                LED(+) ─┘        │
-                                 emisor ── GND
-GPIO12 PWM ──┤1kΩ├── base 2N5551
+UTP2 Par 1 (12V) ──┤1kΩ├── LED(+) ── LED(–) ─┐
+                                       ┌────────┤ colector 2N5551
+                               LED(+) ─┘        │
+                                                emisor ── GND
+UTP2 Par 3 AZ ──┤1kΩ├── base 2N5551
 ```
 (Un 2N5551 conmuta 12V para ambos LEDs externos. La R de 1kΩ en colector limita la corriente a ~9mA total.)
 
@@ -422,18 +444,27 @@ flowchart LR
         G13["GPIO13 🚪 FC"]
     end
 
-    subgraph UTP["📦 UTP Cat5 (4 pares)"]
-        P1["Par 1<br/>BL 🔹 / NA 🔸"]
-        P2["Par 2<br/>BL/V 🚪 / V 🔒"]
-        P3["Par 3<br/>BL/AZ 🔊 / AZ 💡"]
-        P4["Par 4<br/>BL/MR ⬛ / MR ⚡"]
+    subgraph UTP1["📦 UTP1 — Interior"]
+        P1_1["Par 1<br/>BL 🔹 / NA libre"]
+        P2_1["Par 2<br/>BL/V+V ⚡ 12V"]
+        P3_1["Par 3<br/>BL/AZ 🔊 / AZ 💡"]
+        P4_1["Par 4<br/>BL/MR+MR ⬛ GND"]
+    end
+
+    subgraph UTP2["📦 UTP2 — Exterior (≤8m)"]
+        P1_2["Par 1<br/>BL+NA ⚡ 12V always"]
+        P2_2["Par 2<br/>BL/V 🔸 / V 🚪"]
+        P3_2["Par 3<br/>BL/AZ 🔊 / AZ 💡"]
+        P4_2["Par 4<br/>BL/MR ⬛ GND perif / MR ⬛ GND lock"]
     end
 
     subgraph Vestibulo["📍 Vestíbulo (local)"]
         F5V["⚡ Fuente 5V"] --> NodeMCU
-        F12V["⚡🔒 Fuente 12V"] --> P4
-        G5 -- control --> Rele["🔒 Relé NC"]
-        Rele --> P2
+        F12V["⚡🔒 Fuente 12V"]
+        F12V --> P2_1 & P1_2
+        F12V_GND["⚡🔒 GND"] --> P4_1
+        G5 -- control --> Rele["🔒 Relé NC (low-side)"]
+        Rele -- conmuta GND lock --> P4_2
     end
 
     subgraph Paneles["📌 Paneles Remotos"]
@@ -442,25 +473,27 @@ flowchart LR
         Ext["🌳 Exterior<br/>🔸💡"]
     end
 
-    G4 & G16 --> P1
-    G13 --> P2
-    G12 --> P3
-    G14 --> P3
-    P1 --> Salon & Patio & Ext
-    P2 --> Patio
-    P3 --> Salon & Patio & Ext
-    P4 --> Salon & Patio & Ext
+    G4 --> P1_1
+    G12 --> P3_1 & P3_2
+    G14 --> P3_1 & P3_2
+    G16 --> P2_2
+    G13 --> P2_2
+    P1_1 --> Salon
+    P3_1 --> Salon
+    P3_2 --> Patio & Ext
+    P2_2 --> Patio
+    P1_2 --> Patio & Ext
 ```
 
-### 12.3 Circuito — Panel Interno (salón / vestíbulo)
+### 12.3 Circuito — Panel Interno (salón / vestíbulo) — UTP1
 
 ```mermaid
 flowchart LR
-    subgraph UTP["📦 UTP"]
+    subgraph UTP1["📦 UTP1 — Interior"]
         AZ["💡 Par 3 AZ<br/>GPIO12 PWM"]
         BLAZ["🔊 Par 3 BL/AZ<br/>GPIO14 Buzzer"]
-        P4MR["⚡ Par 4 MR<br/>+12V"]
-        GND["⬛ Par 4 BL/MR<br/>GND"]
+        P2_12V["⚡ Par 2 BL/V+V<br/>+12V"]
+        P4_GND["⬛ Par 4 BL/MR+MR<br/>GND"]
         P1BL["🔹 Par 1 BL<br/>GPIO4"]
     end
 
@@ -468,84 +501,91 @@ flowchart LR
         R1[1kΩ] --> B[2N5551 Base]
         AZ --> R1
         B --> C[2N5551 Colector]
-        P4MR --> STRIP["Tira LED 12V"] --> C
-        E[2N5551 Emisor] --> GND
+        P2_12V --> STRIP["Tira LED 12V"] --> C
+        E[2N5551 Emisor] --> P4_GND
     end
 
     subgraph BuzzerSalon["🔊 Salón (con pot)"]
         BLAZ --> POT["Pot 10kΩ<br/>reóstato"] --> RB[1kΩ] --> BB[2N5551 Base]
-        P4MR --> R0A["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12["BUZ12 +"]
+        P2_12V --> R0A["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12["BUZ12 +"]
         BB --> CB[2N5551 Colector] --> BZ12
-        EB[2N5551 Emisor] --> GND
+        EB[2N5551 Emisor] --> P4_GND
     end
 
     subgraph BuzzerVest["🔊 Vestíbulo (directo)"]
         BLAZ --> RBV[1kΩ] --> BBV[2N5551 Base]
-        P4MR --> R0V["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12V["BUZ12 +"]
+        P2_12V --> R0V["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12V["BUZ12 +"]
         BBV --> CBV[2N5551 Colector] --> BZ12V
-        EBV[2N5551 Emisor] --> GND
+        EBV[2N5551 Emisor] --> P4_GND
     end
 
     P1BL --> BtnInt["🔹 Pulsador Int<br/>NA → GND"]
-    BtnInt --> GND
+    BtnInt --> P4_GND
 ```
 
 > **Panel de salón**: el buzzer lleva potenciómetro de 10kΩ entre BL/AZ y la base del 2N5551 como divisor de volumen. Entre 12V y el BUZ12 hay un placeholder para resistencia de atenuación futura (0Ω = cable directo).
 > **Panel de vestíbulo**: sin potenciómetro, el 1kΩ va directo de BL/AZ a la base.
 > Ambos paneles comparten el mismo circuito de LED (2N5551 + tira LED 12V).
 
-### 12.4 Circuito — Panel Externo (patio)
+### 12.4 Circuito — Panel Externo (patio) — UTP2
 
 ```mermaid
 flowchart LR
-    subgraph UTP["📦 UTP"]
-        NA["🔸 Par 1 NA<br/>GPIO16"]
+    subgraph UTP2["📦 UTP2 — Exterior"]
+        NA["🔸 Par 2 BL/V<br/>GPIO16"]
         AZ["💡 Par 3 AZ<br/>GPIO12 PWM"]
         BLAZ["🔊 Par 3 BL/AZ<br/>GPIO14 Buzzer"]
-        P4MR["⚡ Par 4 MR<br/>+12V"]
-        GND["⬛ Par 4 BL/MR<br/>GND"]
+        P1_12V["⚡ Par 1 BL+NA<br/>+12V always"]
+        P4_GND_PERIF["⬛ Par 4 BL/MR<br/>GND periféricos"]
+        P4_GND_LOCK["⬛ Par 4 MR<br/>GND lock (vía relé NC)"]
     end
 
     subgraph Panel["🔸 Panel Patio"]
         NA --> Puls["🔸 Pulsador Ext<br/>NA"]
-        Puls --> GND
+        Puls --> P4_GND_PERIF
 
         subgraph LedExt["💡 LED externos (patio + exterior)"]
             AZ --> RB[1kΩ] --> B[2N5551 Base]
-            P4MR --> RL["1kΩ<br/>límitador"] --> LED1["🔵 LED Patio"]
-            P4MR --> RL --> LED2["🔵 LED Exterior"]
+            P1_12V --> RL["1kΩ<br/>límitador"] --> LED1["🔵 LED Patio"]
+            P1_12V --> RL --> LED2["🔵 LED Exterior"]
             LED1 --> C[2N5551 Colector]
             LED2 --> C
-            E[2N5551 Emisor] --> GND
+            E[2N5551 Emisor] --> P4_GND_PERIF
+        end
+
+        subgraph LockCircuit["🔒 Cerradura"]
+            P1_12V --> Pedal["🚫 Pedal Emergencia<br/>NC"]
+            Pedal --> Lock["🔒 Cerradura Magnética<br/>12V"]
+            Lock --> P4_GND_LOCK
         end
 
         subgraph BuzzerPatio["🔊 Patio"]
             BLAZ --> RBZ[1kΩ] --> BB[2N5551 Base]
-            P4MR --> R0["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12["BUZ12 +"]
+            P1_12V --> R0["0Ω placeholder<br/>(futura R atenuación)"] --> BZ12["BUZ12 +"]
             BB --> CB[2N5551 Colector] --> BZ12
-            EB[2N5551 Emisor] --> GND
+            EB[2N5551 Emisor] --> P4_GND_PERIF
         end
     end
 ```
 
-> El panel **exterior** es idéntico pero **sin el buzzer** — no conecta el hilo BL/AZ del par 3. Solo lleva pulsador (par 1 NA), LED (par 3 AZ con su 2N5551 en el patio) y alimentación (par 4). Ambos LEDs externos comparten el mismo 2N5551 ubicado en el panel del patio.
+> El panel **exterior** es idéntico pero **sin el buzzer** — no conecta el hilo BL/AZ del par 3. Solo lleva pulsador (par 2 BL/V), LED (par 3 AZ con su 2N5551 en el patio) y alimentación (par 1 + par 4 BL/MR). Ambos LEDs externos y la cerradura comparten el 12V del par 1.
 > El pull-up de 10kΩ a 3.3V para GPIO16 está en el **vestíbulo**, junto al MCU.
-### 12.5 Circuito — Cerradura + Pedal de Emergencia
+### 12.5 Circuito — Cerradura + Pedal de Emergencia (UTP2, low-side)
 
 ```mermaid
 flowchart LR
     subgraph Vestibulo["📍 Vestíbulo"]
-        F12V["⚡🔒 Fuente 12V +"] --> P4_MR["Par 4 MR ⚡"]
-        F12V_GND["⚡🔒 GND"] --> GND["⬛ Par 4 BL/MR"]
-        P4_MR --> ReleCOM["🔒 Relé COM"]
-        ReleNC["🔒 Relé NC"] --> P2_V["Par 2 V 🔒"]
-        G5["GPIO5 🔒"] -- control --> Rele["🔒 Relé"]
+        F12V["⚡🔒 Fuente 12V +"] --> P1_12V["Par 1 BL+NA ⚡<br/>12V always"]
+        F12V_GND["⚡🔒 GND"] --> GND["⬛ GND<br/>Común"]
+        G5["GPIO5 🔒"] -- control --> Rele["🔒 Relé NC (low-side)"]
+        ReleCOM["🔒 Relé COM"] --> GND
+        ReleNC["🔒 Relé NC"] --> P4_GND_LOCK["Par 4 MR ⬛<br/>GND lock retorno"]
     end
 
     subgraph Patio["🚪 Patio"]
-        P2_V --> Pedal["🚫 Pedal Emergencia<br/>NC"]
+        P1_12V --> Pedal["🚫 Pedal Emergencia<br/>NC"]
         Pedal --> Lock["🔒 Cerradura Magnética<br/>12V"]
-        Lock --> GND_Lock["⬛ GND<br/>Par 4 BL/MR"]
+        Lock --> P4_GND_LOCK
     end
 
     style F12V fill:#f66
@@ -553,7 +593,7 @@ flowchart LR
     style Pedal fill:#fc6
 ```
 
-Flujo: `+12V → Par 4 MR → Relé COM → NC → Par 2 V → Pedal NC → Cerradura → GND`
+Flujo: `+12V → Par 1 → Pedal NC → Cerradura → Par 4 MR → Relé NC → COM → GND`
 
 | 🔒 Relé NC | 🚫 Pedal NC | 🔒 Cerradura |
 |:----------:|:----------:|:------------:|
@@ -567,17 +607,17 @@ Flujo: `+12V → Par 4 MR → Relé COM → NC → Par 2 V → Pedal NC → Cerr
 
 ### 12.6 Pull-up de pulsador externo (GPIO16)
 
-El pull-up de 10kΩ para GPIO16 está en el **vestíbulo**, junto al MCU. No en los paneles remotos.
+El pull-up de 10kΩ para GPIO16 está en el **vestíbulo**, junto al MCU. No en los paneles remotos. Viaja por UTP2 Par 2 BL/V.
 
 ```mermaid
 flowchart LR
     subgraph Vestibulo["📍 Vestíbulo"]
         VCC["3.3V"] --> R10k["10kΩ"] --> G16["GPIO16"]
-        G16 --> PA1["Par 1 NA"] --> Patio
+        G16 --> PA1["UTP2 Par 2 BL/V 🔸"] --> Patio
     end
 
     subgraph Patio["🚪 Patio / 🌳 Exterior"]
-        PA1 --> Btn["🔸 Pulsador NA"] --> GND_P["⬛ GND"]
+        PA1 --> Btn["🔸 Pulsador NA"] --> GND_P["⬛ GND (Par 4 BL/MR)"]
     end
 ```
 
