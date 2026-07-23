@@ -11,6 +11,7 @@ esp8266:
 wifi:
   ap:
     ssid: "Gate Fallback Hotspot"
+  min_auth_mode: WPA2
 
 captive_portal:
 
