@@ -40,7 +40,7 @@ sobre un solo UTP Cat5 de 4 pares, sin cables adicionales.
 | [LED 5mm Azul Extra Alta](https://tienda.lega.ar/producto/led-5-mm-azul-extra-alta-ef-ea5az) | 2 | $406,35 | $812,70 | 5mm azul, extra alta luminosidad, patios y exterior, con 1kΩ desde 12V |
 | Tira LED 12V (internos) | 2 | — | — ✅ | RGB o blanco, ~30cm, con resistor serie incorporado |
 | [Transistor NPN 2N5551](https://tienda.lega.ar/producto/2n5551-transistor-npn-160v-600-ma-625mw) | 6 | $165,55 | $993,30 | TO-92, 160V/600mA (3 LED + 3 buzzer) |
-| [Resistencia 1kΩ](https://tienda.lega.ar/producto/res0251k-resistencia-025-w-1k-ohms) | 7 | $165,55 | $1.158,85 | 1/4W, carbon film (base + LED externos 12V) |
+| [Resistencia 1kΩ](https://tienda.lega.ar/producto/res0251k-resistencia-025-w-1k-ohms) | 8 | $165,55 | $1.324,40 | 1/4W, carbon film (base + LED externos 12V) |
 | Resistencia 10kΩ | 1 | $165,55 | $165,55 | 1/4W, carbon film (pull-up GPIO16) |
 | [Potenciómetro 10kΩ](https://tienda.lega.ar/producto/pot710k-potenciometro---lineal-mignon-eje-grueso-10k-ohm) | 1 | $2.091,95 | $2.091,95 | Lineal, reóstato, 6mm |
 | [Cable UTP Cat5 (x 1m)](https://tienda.lega.ar/producto/cable-utp-interior-cat5-x-metro-5e100-) | 1 | $406,35 | $406,35 ✅ | 4 pares, sólido, CCA o cobre |
@@ -193,20 +193,21 @@ El sistema tiene dos estados:
 
 | Estado | Relé | Pulsadores | LED | Uso |
 |--------|------|-----------|-----|-----|
-| **DESACTIVADO** (boot) | ON (puerta desbloqueada) | Ignorados | OFF | Mantenimiento / emergencia |
-| **ACTIVADO** | Según `unlock_gate` | Operación normal | 25% brillo (reposo) | Uso diario |
+| **ACTIVADO** (boot) | OFF (puerta cerrada) | Operación normal | 25% brillo (reposo) | Uso diario |
+| **DESACTIVADO** | ON (puerta desbloqueada) | Ignorados (excepto >4s) | OFF | Mantenimiento / emergencia |
 
 Transiciones:
-- Boot → DESACTIVADO
-- DESACTIVADO + pulsación interna >4s → ACTIVADO
+- Boot → ACTIVADO
 - ACTIVADO + pulsación interna >8s → DESACTIVADO
+- DESACTIVADO + pulsación interna >4s → ACTIVADO
 
 ## 6. Detección de Emergencia
 
 ```
 Al recibir final carrera = ON:
   Si desbloqueo_normal_activo OR lock_relay está ON
-     → desbloqueo normal (relé OFF)
+     → desbloqueo normal en curso (relé queda ON, cerradura sin 12V)
+       El auto-lock ocurre silenciosamente cuando FC detecta cierre
   Si no
      → apertura no autorizada (pedal/forzada) → emergency_alert
 ```
@@ -220,7 +221,7 @@ el relé no se confunde con emergencia.
 | Evento | 🔒 Relé | 🔊 Buzzer | 💡 LED |
 |--------|:------:|:--------:|:-----:|
 | **Sistema DESACTIVADO** | ON (perm.) | — | OFF |
-| **Sistema ACTIVADO** (reposo) | — | — | 25% |
+| **Sistema ACTIVADO** (reposo, boot) | — | — | 25% |
 | 🔹 >4s (DESACT → ACTIVAR) | OFF | Secuencia activación | 3 flashes → 25% |
 | 🔹 >8s (ACTIV → DESACTIVAR) | ON (perm.) | Secuencia desactivación | 3 flashes → OFF |
 | 🔸 Externo (ACTIVADO) | — | Melodía actual | Latido 100% `doorbell_led_duration` |
@@ -388,9 +389,9 @@ Las cadenas se definen inline en el YAML como strings literales RTTTL.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> DESACTIVADO : boot
-    DESACTIVADO --> ACTIVADO : pulsación int. >4s
+    [*] --> ACTIVADO : boot
     ACTIVADO --> DESACTIVADO : pulsación int. >8s
+    DESACTIVADO --> ACTIVADO : pulsación int. >4s
 
     state ACTIVADO {
         [*] --> Reposo

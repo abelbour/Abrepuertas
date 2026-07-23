@@ -3,8 +3,9 @@ esphome:
   on_boot:
     priority: 600
     then:
-      - output.turn_on: lock_relay
-      - lambda: 'id(lock_relay_on) = true;'
+      - light.turn_on:
+          id: led_light
+          brightness: 25%
 
 esp8266:
   board: nodemcuv2
@@ -141,7 +142,7 @@ binary_sensor:
 globals:
   - id: system_active
     type: bool
-    initial_value: 'false'
+    initial_value: 'true'
   - id: melody_index
     type: int
     initial_value: '0'
@@ -168,7 +169,7 @@ globals:
     initial_value: '2000'
   - id: lock_relay_on
     type: bool
-    initial_value: 'true'
+    initial_value: 'false'
 
 switch:
   - platform: template
