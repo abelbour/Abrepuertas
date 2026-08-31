@@ -98,7 +98,9 @@ binary_sensor:
               }
 
   - platform: gpio
-    pin: GPIO16
+    pin:
+      number: GPIO16
+      mode: INPUT
     id: pulsador_externo
     name: "Pulsador Externo"
     filters:
@@ -272,9 +274,9 @@ script:
                 then:
                   - lambda: 'id(melody_index) = 0;'
                   - script.execute: gate_open_flash_script
-                  - delay: !lambda 'return id(doorbell_led_duration_ms);'
+                  - delay: !lambda 'return id(unlock_duration_ms);'
                 else:
-                  - delay: !lambda 'return id(doorbell_led_duration_ms);'
+                  - delay: !lambda 'return id(unlock_duration_ms);'
                   - if:
                       condition:
                         binary_sensor.is_on: final_carrera
@@ -353,7 +355,7 @@ script:
                 return;
               }
 
-              // grace period: keep melody playing
+              // grace period: silencio (melodia ya detenida al abrir)
               if (!grace_expired && now - grace_start >= id(unlock_grace_ms)) {
                 grace_expired = true;
                 id(buzzer_rtttl).stop();
@@ -398,9 +400,9 @@ script:
     mode: single
     then:
       - lambda: 'id(system_active) = true;'
-      - lambda: 'id(buzzer_rtttl).play(std::string("d=4,o=5,b=320:c,16p,e,16p,g,16p,c6"));'
+      - lambda: 'id(buzzer_rtttl).play(std::string("d=8,o=5,b=200:8c,8e,8g,8c6,8e6,8d6,8c6,4g"));'
       - repeat:
-          count: 4
+          count: 3
           then:
             - light.turn_on:
                 id: led_light
@@ -424,9 +426,9 @@ script:
     mode: single
     then:
       - lambda: 'id(system_active) = false;'
-      - lambda: 'id(buzzer_rtttl).play(std::string("d=4,o=5,b=320:c6,16p,g,16p,e,16p,c"));'
+      - lambda: 'id(buzzer_rtttl).play(std::string("d=8,o=5,b=200:8c6,8g,8e,8c,8a4,8g,8e,4c"));'
       - repeat:
-          count: 4
+          count: 3
           then:
             - light.turn_on:
                 id: led_light

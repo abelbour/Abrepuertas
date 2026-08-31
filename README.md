@@ -447,8 +447,8 @@ timer se cancela (paso 4) y se reinicia al final del cooldown (paso 11).
 3. Verificar FC inmediatamente:
    SI puerta abierta → LED → flash lento + pitido (gate_open_flash)
                        índice de melodía → 0 (reseta playlist)
-                       esperar doorbell_led_duration (cooldown)
-   SI puerta cerrada → esperar doorbell_led_duration (tiempo de bloqueo)
+                       esperar unlock_duration (cooldown 5s)
+   SI puerta cerrada → esperar unlock_duration (tiempo de bloqueo 5s)
                        → verificar FC otra vez
                          SI abierta → flash lento + pitido
                          SI cerrada → LED → 25% (reposo)
@@ -474,9 +474,9 @@ y no comparte cooldown con el externo — son independientes.
                 then:
                   - lambda: 'id(melody_index) = 0;'
                   - script.execute: gate_open_flash_script
-                  - delay: !lambda 'return id(doorbell_led_duration_ms);'
+                  - delay: !lambda 'return id(unlock_duration_ms);'
                 else:
-                  - delay: !lambda 'return id(doorbell_led_duration_ms);'
+                  - delay: !lambda 'return id(unlock_duration_ms);'
                   - if:
                       condition:
                         binary_sensor.is_on: final_carrera
@@ -595,17 +595,17 @@ El LED parpadea sincronizado: 67ms ON (nota) / 67ms OFF (silencio). Tras el desb
 ```
 1. Sistema → ACTIVADO
 2. Reproducir arpegio ascendente (RTTTL ACTIVAR)
-   d=4,o=5,b=320:c,16p,e,16p,g,16p,c6
-3. LED: 4 flashes sincronizados (190ms on / 45ms off) → 25% (reposo)
+   d=8,o=5,b=200:8c,8e,8g,8c6,8e6,8d6,8c6,4g
+3. LED: 3 flashes sincronizados (190ms on / 45ms off) → 25% (reposo)
 4. Relé → OFF (cerradura bloqueada)
 ```
 
-La secuencia de 4 flashes usa la acción nativa `repeat`:
+La secuencia de 3 flashes usa la acción nativa `repeat`:
 
 ```yaml
-      - lambda: 'id(buzzer_rtttl).play("d=4,o=5,b=320:c,16p,e,16p,g,16p,c6");'
+      - lambda: 'id(buzzer_rtttl).play("d=8,o=5,b=200:8c,8e,8g,8c6,8e6,8d6,8c6,4g");'
       - repeat:
-          count: 4
+          count: 3
           then:
             - light.turn_on: { id: led_light, brightness: 100% }
             - delay: 190ms
@@ -618,17 +618,17 @@ La secuencia de 4 flashes usa la acción nativa `repeat`:
 ```
 1. Sistema → DESACTIVADO
 2. Reproducir arpegio descendente (RTTTL DESACTIVAR)
-   d=4,o=5,b=320:c6,16p,g,16p,e,16p,c
-3. LED: 4 flashes sincronizados (190ms on / 45ms off) → OFF
+   d=8,o=5,b=200:8c6,8g,8e,8c,8a4,8g,8e,4c
+3. LED: 3 flashes sincronizados (190ms on / 45ms off) → OFF
 4. Relé → ON permanentemente (cerradura desbloqueada)
 ```
 
-Mismo patrón de 4 flashes que `enable_system`, pero con arpegio descendente y sin volver a 25%:
+Mismo patrón de 3 flashes que `enable_system`, pero con arpegio descendente y sin volver a 25%:
 
 ```yaml
-      - lambda: 'id(buzzer_rtttl).play("d=4,o=5,b=320:c6,16p,g,16p,e,16p,c");'
+      - lambda: 'id(buzzer_rtttl).play("d=8,o=5,b=200:8c6,8g,8e,8c,8a4,8g,8e,4c");'
       - repeat:
-          count: 4
+          count: 3
           then:
             - light.turn_on: { id: led_light, brightness: 100% }
             - delay: 190ms
